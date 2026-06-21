@@ -1,0 +1,156 @@
+package ptithcm.bean;
+
+import java.util.List;
+import java.util.Map;
+import javax.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+/**
+ * Nhập điểm - PGV nhập/sửa, KHOA xem read-only
+ * HM = CC*0.1 + GK*0.3 + CK*0.6
+ */
+@Controller
+@RequestMapping("/diem")
+public class DiemController {
+
+    @Autowired
+    private ConnectionHelper connHelper;
+
+    @RequestMapping(method = RequestMethod.GET)
+    public String show(HttpSession session, ModelMap model) {
+        String nhomQuyen = (String) session.getAttribute("nhomQuyen");
+        if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) return "redirect:/home";
+        JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
+        String maKhoa = (String) session.getAttribute("maKhoa");
+        reloadDropdowns(jdbc, nhomQuyen, maKhoa, model);
+        return "diem";
+    }
+
+    @RequestMapping(value = "/load", method = RequestMethod.POST)
+    public String loadDiem(@RequestParam String nienkhoa, @RequestParam int hocky,
+                           @RequestParam String mamh, @RequestParam int nhom,
+                           HttpSession session, ModelMap model) {
+        String nhomQuyen = (String) session.getAttribute("nhomQuyen");
+        if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) return "redirect:/home";
+        JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
+        String maKhoa = (String) session.getAttribute("maKhoa");
+
+        // Tìm LTC
+        List<Map<String, Object>> ltcRows;
+        if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
+            ltcRows = jdbc.queryForList(
+                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOIDA, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
+                "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
+                "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=?",
+                nienkhoa.trim(), hocky, mamh.trim(), nhom);
+        } else {
+            ltcRows = jdbc.queryForList(
+                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOIDA, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
+                "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
+                "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=? AND LTC.MAKHOA=?",
+                nienkhoa.trim(), hocky, mamh.trim(), nhom, maKhoa);
+        }
+
+        if (ltcRows.isEmpty()) {
+            model.addAttribute("error", "Không tìm thấy lớp tín chỉ!");
+            reloadDropdowns(jdbc, nhomQuyen, maKhoa, model);
+            return "diem";
+        }
+
+        Map<String, Object> ltcInfo = ltcRows.get(0);
+        int maltc = (Integer) ltcInfo.get("MALTC");
+        boolean huylop = ltcInfo.get("HUYLOP") != null && (Boolean) ltcInfo.get("HUYLOP");
+        String tenmh = jdbc.queryForObject("SELECT TENMH FROM MONHOC WHERE MAMH=?", String.class, mamh.trim());
+
+        // Load SV + điểm + tính HM server-side
+        List<Map<String, Object>> dssv = jdbc.queryForList(
+            "SELECT DK.MASV, SV.HO + ' ' + SV.TEN AS HOTENSV, SV.MALOP, " +
+            "DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK " +
+            "FROM DANGKY DK JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
+            "WHERE DK.MALTC=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
+            "ORDER BY SV.TEN, SV.HO", maltc);
+
+        // Thống kê
+        int totalSV = dssv.size(), daNhap = 0, chuaNhap = 0, dat = 0, rot = 0;
+        for (Map<String, Object> sv : dssv) {
+            Double cc = toDouble(sv.get("DIEM_CC")), gk = toDouble(sv.get("DIEM_GK")), ck = toDouble(sv.get("DIEM_CK"));
+            if (ck != null) {
+                daNhap++;
+                double hm = (cc != null ? cc : 0) * 0.1 + (gk != null ? gk : 0) * 0.3 + ck * 0.6;
+                sv.put("DIEM_HM", Math.round(hm * 100.0) / 100.0);
+                if (hm >= 5) dat++; else rot++;
+            } else { chuaNhap++; sv.put("DIEM_HM", null); }
+        }
+
+        model.addAttribute("dssv", dssv);
+        model.addAttribute("maltc", maltc);
+        model.addAttribute("nienkhoa", nienkhoa.trim());
+        model.addAttribute("hocky", hocky);
+        model.addAttribute("mamh", mamh.trim());
+        model.addAttribute("tenmh", tenmh);
+        model.addAttribute("nhom", nhom);
+        model.addAttribute("hotenGV", ltcInfo.get("HOTENGV"));
+        model.addAttribute("tenKhoa", ltcInfo.get("TENKHOA"));
+        model.addAttribute("sosvToida", ltcInfo.get("SOSVTOIDA"));
+        model.addAttribute("huylop", huylop);
+        model.addAttribute("totalSV", totalSV);
+        model.addAttribute("daNhap", daNhap);
+        model.addAttribute("chuaNhap", chuaNhap);
+        model.addAttribute("dat", dat);
+        model.addAttribute("rot", rot);
+        model.addAttribute("tyLeDat", totalSV > 0 && daNhap > 0 ? Math.round(dat * 100.0 / daNhap) : 0);
+        reloadDropdowns(jdbc, nhomQuyen, maKhoa, model);
+        return "diem";
+    }
+
+    @RequestMapping(value = "/save", method = RequestMethod.POST)
+    public String saveDiem(@RequestParam int maltc, @RequestParam String nienkhoa,
+                           @RequestParam int hocky, @RequestParam String mamh, @RequestParam int nhom,
+                           @RequestParam("masv[]") String[] masvArr,
+                           @RequestParam("diemCC[]") String[] diemCCArr,
+                           @RequestParam("diemGK[]") String[] diemGKArr,
+                           @RequestParam("diemCK[]") String[] diemCKArr,
+                           HttpSession session, RedirectAttributes ra) {
+        String nhomQuyen = (String) session.getAttribute("nhomQuyen");
+        if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) {
+            ra.addFlashAttribute("error", "Bạn không có quyền ghi điểm!");
+            return "redirect:/diem";
+        }
+        JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
+        try {
+            // Validate trước
+            for (int i = 0; i < masvArr.length; i++) {
+                Double cc = parseDoubleOrNull(diemCCArr[i]), gk = parseDoubleOrNull(diemGKArr[i]), ck = parseDoubleOrNull(diemCKArr[i]);
+                if (cc != null && (cc < 0 || cc > 10)) { ra.addFlashAttribute("error", "Điểm CC SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem"; }
+                if (gk != null && (gk < 0 || gk > 10)) { ra.addFlashAttribute("error", "Điểm GK SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem"; }
+                if (ck != null && (ck < 0 || ck > 10)) { ra.addFlashAttribute("error", "Điểm CK SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem"; }
+            }
+            for (int i = 0; i < masvArr.length; i++) {
+                Double cc = parseDoubleOrNull(diemCCArr[i]), gk = parseDoubleOrNull(diemGKArr[i]), ck = parseDoubleOrNull(diemCKArr[i]);
+                jdbc.update("UPDATE DANGKY SET DIEM_CC=?, DIEM_GK=?, DIEM_CK=? WHERE MALTC=? AND MASV=?",
+                    cc, gk, ck, maltc, masvArr[i].trim());
+            }
+            ra.addFlashAttribute("success", "Ghi điểm thành công cho " + masvArr.length + " sinh viên!");
+        } catch (Exception e) { ra.addFlashAttribute("error", "Lỗi ghi điểm: " + e.getMessage()); }
+        return "redirect:/diem";
+    }
+
+    private void reloadDropdowns(JdbcTemplate jdbc, String nhomQuyen, String maKhoa, ModelMap model) {
+        model.addAttribute("dsmh", jdbc.queryForList("SELECT MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
+        List<Map<String, Object>> khoaList = jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA");
+        model.addAttribute("khoaList", khoaList);
+        if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
+            model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI ORDER BY NIENKHOA DESC"));
+        } else {
+            model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI WHERE MAKHOA=? ORDER BY NIENKHOA DESC", maKhoa));
+        }
+    }
+
+    private Double toDouble(Object o) { if (o == null) return null; return ((Number) o).doubleValue(); }
+    private Double parseDoubleOrNull(String s) { if (s == null || s.trim().isEmpty()) return null; try { return Double.parseDouble(s.trim()); } catch (Exception e) { return null; } }
+}
