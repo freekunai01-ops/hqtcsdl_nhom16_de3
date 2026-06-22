@@ -10,7 +10,7 @@
 - Các lưới hiển thị chia đôi màn hình (Left pane nhập liệu / Right pane danh sách), tạo trải nghiệm sử dụng đồng bộ và cao cấp.
 
 #### 2. Cải tiến và bổ sung tính năng nghiệp vụ:
-- **Quản trị tài khoản:** Nâng cấp sang dạng Split Pane (Trái: thông tin tài khoản & hướng dẫn phân quyền / Phải: danh sách tài khoản hiện có trong CSDL). Hỗ trợ nhấp chuột chọn tài khoản từ danh sách để tự động điền form, và xử lý cập nhật tài khoản hệ thống (admin, khoa_cntt, sv) một cách thông minh mà không phụ thuộc vào mã giảng viên.
+- **Quản trị tài khoản:** Nâng cấp sang dạng Split Pane (Trái: thông tin tài khoản & hướng dẫn phân quyền / Phải: danh sách tài khoản hiện có trong CSDL). Hỗ trợ nhấp chuột chọn tài khoản từ danh sách để tự động điền form, và xử lý cập nhật tài khoản hệ thống (pgv_admin, khoa_all, sv) một cách thông minh mà không phụ thuộc vào mã giảng viên.
 - **In ấn / Báo cáo:** Hợp nhất 5 mẫu báo cáo vào một màn hình xem trước (Print Preview) trực quan. Người dùng chọn loại báo cáo và nhập tham số ở cột bên trái, dữ liệu báo cáo sẽ được truy vấn và hiển thị dạng bản xem trước chuẩn in ấn (font Times New Roman) ở cột bên phải. Hỗ trợ nút `In trực tiếp` để in nội dung báo cáo mà không cần mở tab mới.
 - **Đăng ký Lớp tín chỉ (SV):** Giao diện dạng checklist cho phép check chọn nhiều lớp cùng lúc và nhấn nút "Đăng ký" duy nhất để thực hiện đăng ký/hủy hàng loạt. Hiển thị tổng số lớp đã chọn ở thanh trạng thái thời gian thực.
 - **Môn học:** Tự động tính toán trường `Tổng tiết` = `Số tiết LT` + `Số tiết TH` trực tiếp trên form bằng Javascript khi người dùng thay đổi số liệu.
@@ -33,7 +33,26 @@
 
 📦 **Vị trí:** `C:\Users\phuc\Desktop\hqtcsdl_nhom16_de3.zip` (8.03 MB)
 
+
 ---
+
+## 🔄 CHUẨN HÓA ĐIỀU HƯỚNG CRUD & CẤU HÌNH SERVER
+
+### 1. Chuẩn Hóa Điều Hướng Giữ Dòng Chọn (Row-Preserving CRUD Navigation)
+Để mang lại trải nghiệm sử dụng giống ứng dụng Desktop (WinForms), toàn bộ 5 mô-đun chính (`Sinh viên`, `Lớp`, `Giảng viên`, `Môn học`, `Lớp tín chỉ`) đã được chuẩn hóa cơ chế lưu vết và điều hướng dòng chọn:
+*   **Thao tác Thêm (Add):** Sau khi Ghi thành công bản ghi mới, hệ thống tự động điều hướng và làm nổi bật (focus/highlight) đúng dòng vừa thêm mới.
+*   **Thao tác Sửa (Edit):** Khi cập nhật thông tin bản ghi hiện tại, dòng chọn và trang hiện tại vẫn được giữ nguyên vị trí, không bị nhảy về đầu danh sách.
+*   **Thao tác Xóa (Delete):** Sau khi Xóa, giao diện tự động tính toán bản ghi tiếp theo (hoặc bản ghi liền trước nếu xóa bản ghi cuối cùng) qua thuộc tính `nextRecordId` của Javascript và truyền lên Controller. Controller sau khi thực hiện câu lệnh SQL DELETE sẽ chuyển hướng về đúng bản ghi kế tiếp này để giữ tiêu điểm hiển thị liên tục cho người dùng.
+
+### 2. Cấu hình Biên dịch & Khắc Phục Lỗi Ánh Xạ (404/Parameter Mapping)
+*   **Vấn đề:** Do Eclipse WTP Cache deploy đôi khi không đồng bộ hoặc biên dịch thiếu thông tin tên tham số (parameter names), Spring MVC không thể nhận diện được các tham số `@RequestParam` dạng nguyên bản (ví dụ: `masv`, `malop`) dẫn đến lỗi 500/404: `Name for argument type [java.lang.String] not available`.
+*   **Giải pháp:** 
+    1.  Biên dịch Java Controllers với cờ `-parameters` để giữ nguyên tên tham số trong file bytecode `.class` (ví dụ: `javac -parameters ...`).
+    2.  Đảm bảo các file `.class` được copy trực tiếp vào thư mục deployment của Tomcat (`WEB-INF/classes/ptithcm/bean/`).
+    3.  Khởi động Tomcat thủ công từ JRE của Eclipse và chỉ định đúng thư mục deployment `wtpwebapps` thông qua cờ `-Dwtp.deploy`.
+
+---
+
 
 ## 🔐 HƯỚNG DẪN PHÂN QUYỀN TRONG SQL SERVER
 
@@ -51,13 +70,12 @@ Script đã được chạy tự động. Nếu cần chạy lại:
 
 ### Bước 3: Kiểm tra Logins đã tạo
 
-Trong SSMS, mở **Security → Logins**, bạn sẽ thấy 4 logins:
+Trong SSMS, mở **Security → Logins**, bạn sẽ thấy 3 logins:
 
 | Login | Password | Ý nghĩa |
 |-------|----------|---------|
 | `pgv_admin` | `123456` | Phòng Giáo vụ - toàn quyền |
-| `khoa_cntt` | `khoa123` | Khoa CNTT - quyền hạn chế |
-| `khoa_vt` | `khoa456` | Khoa Viễn Thông - quyền hạn chế |
+| `khoa_all` | `123456` | Quản lý Khoa (chung) - quyền hạn chế (đọc liên khoa / nhập điểm) |
 | `sv` | `sv123` | Sinh viên (dùng chung) - quyền tối thiểu |
 
 ### Bước 4: Kiểm tra Database Roles
@@ -67,7 +85,7 @@ Trong SSMS: `QLDSV_HTC → Security → Roles → Database Roles`:
 | Role | Members | Quyền |
 |------|---------|-------|
 | **PGV** | pgv_admin | SELECT, INSERT, UPDATE, DELETE trên tất cả bảng |
-| **KHOA** | khoa_cntt, khoa_vt | SELECT trên tất cả; UPDATE trên DANGKY (nhập điểm) |
+| **KHOA** | khoa_all | SELECT trên tất cả; UPDATE trên DANGKY (nhập điểm) |
 | **NHOM_SV** | sv | SELECT trên các bảng; INSERT, UPDATE trên DANGKY (đăng ký) |
 
 ### Bước 5: Kiểm tra Permissions (Xác minh trực quan)
@@ -78,7 +96,7 @@ Trong SSMS, click chuột phải vào Role `KHOA` → Properties → Securables:
 - ❌ KHÔNG có INSERT/DELETE trên KHOA, LOP, SINHVIEN, MONHOC, GIANGVIEN, LOPTINCHI
 
 > [!TIP]
-> Để test quyền thủ công: Trong SSMS, kết nối lại bằng login `khoa_cntt` / `khoa123`, thử chạy:
+> Để test quyền thủ công: Trong SSMS, kết nối lại bằng login `khoa_all` / `123456`, thử chạy:
 > ```sql
 > USE QLDSV_HTC;
 > -- Sẽ thành công (có quyền SELECT):
@@ -156,9 +174,8 @@ Trong SSMS, click chuột phải vào Role `KHOA` → Properties → Securables:
 | Loại | Login | Password | Mô tả |
 |------|-------|----------|-------|
 | PGV | `pgv_admin` | `123456` | Toàn quyền |
-| KHOA | `khoa_cntt` | `khoa123` | Khoa CNTT |
-| KHOA | `khoa_vt` | `khoa456` | Khoa VT |
-| SV | Bất kỳ MASV (vd: `N15DCCN001`) | `123456` | Sinh viên |
+| KHOA | `khoa_all` | `123456` | Quản lý Khoa (chung cho tất cả các khoa) |
+| SV | Bất kỳ MASV (vd: `N15DCCN001`) | `123456` | Sinh viên (đăng nhập qua DB user `sv`) |
 
 ---
 
@@ -178,7 +195,7 @@ graph TB
     subgraph "SQL Server Express"
         DB["QLDSV_HTC"]
         R["Roles: PGV, KHOA, NHOM_SV"]
-        L["Logins: pgv_admin, khoa_xx, sv"]
+        L["Logins: pgv_admin, khoa_all, sv"]
     end
     U -->|HTTP| AI --> C --> CH --> JT --> DB
     L --> R
@@ -187,3 +204,25 @@ graph TB
 
 > [!IMPORTANT]
 > **Dynamic SQL Connection**: Khi user đăng nhập, hệ thống tự động chuyển kết nối SQL Server sang login tương ứng (pgv_admin/khoa_cntt/khoa_vt/sv). SQL Server sẽ tự enforce permissions dựa trên Role. Đây là **phân quyền 2 tầng**: Application layer + Database layer.
+
+---
+
+## 🛠️ CẬP NHẬT & SỬA LỖI MỚI (LỚP TÍN CHỈ & CHARACTER ENCODING)
+
+### 1. Khắc phục Sĩ số ảo & Phân bố Sinh viên Đăng ký (Mock Data)
+*   **Vấn đề:** Các khóa K20, K21 và K22 chồng lấn đăng ký vào cùng một danh sách lớp tín chỉ cũ, dẫn đến tình trạng sĩ số vượt mức tối đa (75 / 40) và một số lớp tín chỉ khác lại có 0 sinh viên.
+*   **Giải pháp:** 
+    *   Tách biệt hoàn toàn dải đăng ký trong file dữ liệu mẫu `sql/add_full_mock_data.sql`:
+        *   **K20:** Chỉ đăng ký các lớp tín chỉ từ mã `1` đến `29` (dành cho niên khóa 2020-2021 đến 2023-2024).
+        *   **K21:** Chỉ đăng ký các lớp tín chỉ từ mã `30` đến `35` (dành cho niên khóa 2024-2025).
+        *   **K22:** Chỉ đăng ký các lớp tín chỉ từ mã `36` đến `39` (dành cho niên khóa 2025-2026).
+    *   Đã chạy lại script dữ liệu mẫu để đồng bộ hoàn toàn cơ sở dữ liệu. Tất cả các lớp hiện tại đều đạt sĩ số thực tế hợp lý (từ 10 đến 40 sinh viên) và không còn lớp nào bị 0 sinh viên.
+
+### 2. Sửa lỗi Hiển thị Tiếng Việt (Character Encoding)
+*   **Vấn đề:** Các trang báo cáo khi xem/in (`baocao_report.jsp`) bị hiển thị sai font chữ hoặc lỗi hiển thị các ký tự đặc biệt có dấu (ví dụ: "VÃ©", "BÃ¬nh") do trình duyệt đọc sai Header Encoding là Latin-1 (ISO-8859-1).
+*   **Giải pháp:**
+    1.  **Cấu hình ViewResolver:** Thêm thuộc tính `p:contentType="text/html; charset=UTF-8"` cho bean `viewResolver` trong file cấu hình Spring `spring-config-mvc.xml` để ép Server phản hồi Header UTF-8.
+    2.  **Lọc mã hóa:** Kích hoạt bộ lọc toàn cục `CharacterEncodingFilter` trong `web.xml` để chuẩn hóa dữ liệu Request/Response sang UTF-8.
+    3.  **Khắc phục double-encode trong JSP:** Biên tập và thay thế toàn bộ mã chữ lỗi double-encode trong trang `baocao_report.jsp` thành Tiếng Việt chuẩn UTF-8 nguyên bản. 
+    4.  Đảm bảo mọi văn bản tĩnh (Static Text) và dữ liệu động tải lên từ Database (Mã môn, Họ tên, Xếp loại...) hiển thị trơn tru, sắc nét chuẩn Tiếng Việt trên tất cả trình duyệt.
+

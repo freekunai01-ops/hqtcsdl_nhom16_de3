@@ -31,6 +31,9 @@
         .info-panel .info-row { display:flex; justify-content:space-between; margin-bottom:4px; }
         .info-panel .info-label { color:#64748b; }
         .info-panel .info-value { font-weight:bold; color:#1e293b; }
+        .lock-warning { display:none; margin-top:8px; padding:7px 10px; background:#fef3c7; border:1px solid #f59e0b; border-radius:4px; font-size:11px; color:#92400e; line-height:1.5; }
+        .lock-warning.show { display:block; }
+        input.field-locked { background:#f8fafc !important; color:#94a3b8 !important; cursor:not-allowed !important; border-color:#cbd5e1 !important; }
     </style>
 </head>
 <body>
@@ -60,7 +63,8 @@
             <div class="form-window-body">
                 <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:4px;padding:5px 12px;margin-bottom:10px;font-size:11.5px;color:#1e40af;">
                     <i class="fas fa-info-circle"></i>
-                    Môn học là danh mục nền để mở lớp tín chỉ và tính tín chỉ/GPA. Môn đã mở LTC <strong>không được xóa</strong> hoặc đổi mã môn; sửa số tiết cần cẩn nhắc vì ảnh hưởng tín chỉ quy đổi.
+                    Môn học là danh mục nền để mở lớp tín chỉ và tính tín chỉ/GPA.
+                    Môn <strong>đã từng mở LTC</strong>: <strong>không được xóa</strong>, không đổi mã môn, không sửa số tiết nếu đã có điểm sinh viên.
                 </div>
 
                 <!-- Stats -->
@@ -81,30 +85,36 @@
                                 <div class="pane-row">
                                     <span class="pane-label">Mã MH:</span>
                                     <div class="pane-input-wrapper">
-                                        <input type="text" id="mhPK" name="mamh" data-field="MAMH" class="pane-input" maxlength="10" required
+                                        <input type="text" id="mhPK" name="mamh" data-field="MAMH" class="pane-input" value="${not empty error ? failedMamh : ''}" maxlength="10" required
                                                <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
                                     </div>
                                 </div>
                                 <div class="pane-row">
                                     <span class="pane-label">Tên môn học:</span>
                                     <div class="pane-input-wrapper">
-                                        <input type="text" name="tenmh" data-field="TENMH" class="pane-input" maxlength="50" required
+                                        <input type="text" name="tenmh" data-field="TENMH" class="pane-input" value="${not empty error ? failedTenmh : ''}" maxlength="50" required
                                                <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
                                     </div>
                                 </div>
                                 <div class="pane-row">
                                     <span class="pane-label">Số tiết LT:</span>
-                                    <div class="pane-input-wrapper">
-                                        <input type="number" id="sotietLT" name="sotietLT" data-field="SOTIET_LT" class="pane-input" min="0" required oninput="tinhTongTiet()"
+                                    <div class="pane-input-wrapper" style="position:relative">
+                                        <input type="number" id="sotietLT" name="sotietLT" data-field="SOTIET_LT" class="pane-input" value="${not empty error ? failedSotietLT : ''}" min="0" required oninput="tinhTongTiet()"
                                                <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
+                                        <span id="lockIconLT" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px;"><i class="fas fa-lock"></i></span>
                                     </div>
                                 </div>
                                 <div class="pane-row">
                                     <span class="pane-label">Số tiết TH:</span>
-                                    <div class="pane-input-wrapper">
-                                        <input type="number" id="sotietTH" name="sotietTH" data-field="SOTIET_TH" class="pane-input" min="0" required oninput="tinhTongTiet()"
+                                    <div class="pane-input-wrapper" style="position:relative">
+                                        <input type="number" id="sotietTH" name="sotietTH" data-field="SOTIET_TH" class="pane-input" value="${not empty error ? failedSotietTH : ''}" min="0" required oninput="tinhTongTiet()"
                                                <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
+                                        <span id="lockIconTH" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px;"><i class="fas fa-lock"></i></span>
                                     </div>
+                                </div>
+                                <div id="lockWarning" class="lock-warning">
+                                    <i class="fas fa-lock"></i> <strong>Số tiết bị khoá:</strong> Môn này đã có lịch sử điểm sinh viên.
+                                    Chỉ được sửa <strong>Tên môn học</strong>. Liên hệ quản trị nếu cần thay đổi số tiết.
                                 </div>
                             </div>
                             <!-- Info panel -->
@@ -125,10 +135,10 @@
                             <div style="display:flex;align-items:center;margin-bottom:6px;">
                                 <div class="filter-tabs">
                                     <div class="filter-tab active" onclick="filterMH('all',this)">Tất cả</div>
-                                    <div class="filter-tab" onclick="filterMH('damoltc',this)">Đã mở LTC</div>
-                                    <div class="filter-tab" onclick="filterMH('chuamo',this)">Chưa mở</div>
+                                    <div class="filter-tab" onclick="filterMH('damoltc',this)">Đã từng mở LTC</div>
+                                    <div class="filter-tab" onclick="filterMH('chuamo',this)">Chưa mở LTC</div>
                                 </div>
-                                <div class="filter-hint"><i class="fas fa-info-circle"></i> Môn đã mở LTC: không xóa, không đổi mã</div>
+                                <div class="filter-hint"><i class="fas fa-lock"></i> Đã mở LTC: không xóa, không đổi mã, số tiết bị khoá nếu có điểm</div>
                             </div>
                             <div class="table-search-box">
                                 <i class="fas fa-search"></i>
@@ -148,7 +158,8 @@
                                     </tr></thead>
                                     <tbody>
                                         <c:forEach items="${dsmh}" var="mh">
-                                            <tr data-mamh="${mh.MAMH}" data-soltc="${mh.SO_LTC}">
+                                            <tr data-mamh="${mh.MAMH}" data-soltc="${mh.SO_LTC}" data-sodk="${mh.SO_DK}"
+                                                class="${mh.MAMH.trim() == selectedMamh ? 'selected' : ''}">
                                                 <td data-col="MAMH">${mh.MAMH}</td>
                                                 <td data-col="TENMH">${mh.TENMH}</td>
                                                 <td data-col="SOTIET_LT">${mh.SOTIET_LT}</td>
@@ -186,7 +197,7 @@
     </main>
 </div>
 </div>
-<script src="${pageContext.request.contextPath}/js/app.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
 function tinhTongTiet() {
     var lt = parseInt(document.getElementById('sotietLT').value) || 0;
@@ -197,26 +208,96 @@ function tinhTongTiet() {
     document.getElementById('infoTongTiet').textContent = tong;
     document.getElementById('infoTinChi').textContent = tc + ' TC';
 }
+// Lock/unlock sotiet fields based on LTC history and DANGKY history
+function setSotietLock(soltc, sodk) {
+    var ltField = document.getElementById('sotietLT');
+    var thField = document.getElementById('sotietTH');
+    var lockWarn = document.getElementById('lockWarning');
+    var lockLT = document.getElementById('lockIconLT');
+    var lockTH = document.getElementById('lockIconTH');
+    // Lock số tiết khi đã có điểm lịch sử (sodk > 0)
+    var shouldLock = sodk > 0;
+    if (ltField) {
+        ltField.readOnly = shouldLock;
+        if (shouldLock) { ltField.classList.add('field-locked'); } else { ltField.classList.remove('field-locked'); }
+    }
+    if (thField) {
+        thField.readOnly = shouldLock;
+        if (shouldLock) { thField.classList.add('field-locked'); } else { thField.classList.remove('field-locked'); }
+    }
+    if (lockLT) lockLT.style.display = shouldLock ? '' : 'none';
+    if (lockTH) lockTH.style.display = shouldLock ? '' : 'none';
+    if (lockWarn) {
+        if (shouldLock) { lockWarn.classList.add('show'); } else { lockWarn.classList.remove('show'); }
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     initTableSelection('mhTable', 'mh');
     var rows = document.querySelectorAll('#mhTable tbody tr');
     rows.forEach(function(row) {
         row.addEventListener('click', function() {
             var mamh = this.querySelector('[data-col="MAMH"]').textContent.trim();
-            var soltc = this.getAttribute('data-soltc') || '0';
+            var soltc = parseInt(this.getAttribute('data-soltc') || '0');
+            var sodk  = parseInt(this.getAttribute('data-sodk')  || '0');
+            // Lock MAMH (PK) — không cho sửa khi đang update
+            var pk = document.getElementById('mhPK');
+            if (pk) { pk.readOnly = true; pk.style.background = '#f1f5f9'; }
             document.getElementById('selectedMhStatus').textContent = 'Đã chọn: ' + mamh;
             document.getElementById('infoSoLTC').textContent = soltc;
-            if (parseInt(soltc) > 0) {
-                document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-damoltc">Đã mở LTC</span>';
+            if (soltc > 0) {
+                document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-damoltc">Đã từng mở LTC</span>';
             } else {
-                document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-chuamo">Chưa mở</span>';
+                document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-chuamo">Chưa mở LTC</span>';
             }
+            setSotietLock(soltc, sodk);
             tinhTongTiet();
         });
     });
+
+    var activeMamh = '${selectedMamh}';
+    if (activeMamh) {
+        var foundRow = null;
+        rows.forEach(function(row) {
+            if (row.getAttribute('data-mamh').trim() === activeMamh) {
+                foundRow = row;
+            }
+        });
+        if (foundRow) {
+            var hasError = ${not empty error};
+            var soltc = parseInt(foundRow.getAttribute('data-soltc') || '0');
+            var sodk  = parseInt(foundRow.getAttribute('data-sodk')  || '0');
+            if (hasError) {
+                foundRow.classList.add('selected');
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                document.getElementById('selectedMhStatus').textContent = 'Đã chọn: ' + activeMamh;
+                document.getElementById('infoSoLTC').textContent = soltc;
+                if (soltc > 0) {
+                    document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-damoltc">Đã từng mở LTC</span>';
+                } else {
+                    document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-chuamo">Chưa mở LTC</span>';
+                }
+                setSotietLock(soltc, sodk);
+                tinhTongTiet();
+                // Restore action state
+                document.getElementById('mhAction').value = '${failedAction}';
+                var pkField = document.getElementById('mhPK');
+                if (pkField && '${failedAction}' === 'update') {
+                    pkField.readOnly = true;
+                    pkField.style.background = '#f1f5f9';
+                }
+            } else {
+                foundRow.click();
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }
 });
 function btnThemMH() {
     btnThem('mh');
+    // Mở khóa PK — thêm mới cần nhập MAMH
+    var pkF = document.getElementById('mhPK');
+    if (pkF) { pkF.readOnly = false; pkF.style.background = ''; }
     document.getElementById('infoTongTiet').textContent = '0';
     document.getElementById('infoTinChi').textContent = '0 TC';
     document.getElementById('infoSoLTC').textContent = '0';
@@ -227,17 +308,31 @@ function btnXoaMH() {
     if (!pk || !pk.value.trim()) { alert('Chọn môn học cần xóa!'); return; }
     var row = document.querySelector('#mhTable tbody tr.selected');
     if (row) {
-        var soltc = row.getAttribute('data-soltc');
-        if (soltc && parseInt(soltc) > 0) {
-            alert('Không thể xóa! Môn ' + pk.value + ' đã mở ' + soltc + ' lớp tín chỉ.');
+        var soltc = parseInt(row.getAttribute('data-soltc') || '0');
+        var sodk  = parseInt(row.getAttribute('data-sodk')  || '0');
+        if (soltc > 0) {
+            var msg = 'Không thể xóa! Môn "' + pk.value + '" đã từng mở ' + soltc + ' lớp tín chỉ.';
+            if (sodk > 0) msg += '\nCó ' + sodk + ' lượt đăng ký/điểm lịch sử của sinh viên.';
+            msg += '\n\nCần giữ lại để bảo toàn phiếu điểm và báo cáo lịch sử.';
+            alert(msg);
             return;
         }
     }
-    if (confirm('Xóa môn học ' + pk.value + '?')) {
+    if (confirm('Xóa môn học "' + pk.value + '"?\nHành động này không thể hoàn tác!')) {
+        var nextMamh = '';
+        if (row) {
+            var nextRow = row.nextElementSibling;
+            if (!nextRow) nextRow = row.previousElementSibling;
+            if (nextRow) {
+                var cell = nextRow.querySelector('[data-col="MAMH"]');
+                if (cell) nextMamh = cell.textContent.trim();
+            }
+        }
         var f = document.createElement('form'); f.method='POST';
         f.action = '${pageContext.request.contextPath}/monhoc/delete';
-        var i = document.createElement('input'); i.type='hidden'; i.name='mamh'; i.value=pk.value.trim();
-        f.appendChild(i); document.body.appendChild(f); f.submit();
+        var i = document.createElement('input'); i.type='hidden'; i.name='mamh'; i.value=pk.value.trim(); f.appendChild(i);
+        var i2 = document.createElement('input'); i2.type='hidden'; i2.name='nextMamh'; i2.value=nextMamh; f.appendChild(i2);
+        document.body.appendChild(f); f.submit();
     }
 }
 function filterMH(type, el) {

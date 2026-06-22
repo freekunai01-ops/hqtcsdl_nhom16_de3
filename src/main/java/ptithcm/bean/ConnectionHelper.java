@@ -17,7 +17,7 @@ public class ConnectionHelper {
     /**
      * Tạo JdbcTemplate với SQL Server login tương ứng nhóm quyền user.
      * - PGV  -> login pgv_admin
-     * - KHOA -> login khoa_cntt / khoa_vt
+     * - KHOA -> login khoa_all
      * - SV   -> login sv
      * Nếu chưa login, dùng sa (cho trang login).
      */

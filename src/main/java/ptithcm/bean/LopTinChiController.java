@@ -19,7 +19,8 @@ public class LopTinChiController {
     private ConnectionHelper connHelper;
 
     @RequestMapping(method = RequestMethod.GET)
-    public String show(HttpSession session, ModelMap model) {
+    public String show(@RequestParam(value = "maltc", required = false) Integer maltc,
+                       HttpSession session, ModelMap model) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) {
             return "redirect:/home";
@@ -30,23 +31,30 @@ public class LopTinChiController {
         List<Map<String, Object>> dsgv;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
             dsltc = jdbc.queryForList(
-                "SELECT LTC.*, MH.TENMH, GV.HO + ' ' + GV.TEN AS HOTENGV, " +
+                "SELECT LTC.MALTC, RTRIM(LTC.NIENKHOA) AS NIENKHOA, LTC.HOCKY, RTRIM(LTC.MAMH) AS MAMH, LTC.NHOM, " +
+                "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.SOSVTOIDA, LTC.HUYLOP, " +
+                "LTC.NGAYBATDAU_DK, LTC.NGAYKETTHUC_DK, LTC.NGAYHETHAN_HUY, LTC.LYDOHUY, MH.TENMH, " +
+                "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
                 "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK " +
                 "FROM LOPTINCHI LTC JOIN MONHOC MH ON LTC.MAMH=MH.MAMH JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV " +
                 "ORDER BY LTC.NIENKHOA DESC, LTC.HOCKY, MH.TENMH, LTC.NHOM");
-            dsgv = jdbc.queryForList("SELECT MAGV, HO + ' ' + TEN AS HOTENGV FROM GIANGVIEN ORDER BY TEN");
+            dsgv = jdbc.queryForList("SELECT RTRIM(MAGV) AS MAGV, HO + ' ' + TEN AS HOTENGV FROM GIANGVIEN ORDER BY TEN");
         } else {
             dsltc = jdbc.queryForList(
-                "SELECT LTC.*, MH.TENMH, GV.HO + ' ' + GV.TEN AS HOTENGV, " +
+                "SELECT LTC.MALTC, RTRIM(LTC.NIENKHOA) AS NIENKHOA, LTC.HOCKY, RTRIM(LTC.MAMH) AS MAMH, LTC.NHOM, " +
+                "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.SOSVTOIDA, LTC.HUYLOP, " +
+                "LTC.NGAYBATDAU_DK, LTC.NGAYKETTHUC_DK, LTC.NGAYHETHAN_HUY, LTC.LYDOHUY, MH.TENMH, " +
+                "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
                 "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK " +
                 "FROM LOPTINCHI LTC JOIN MONHOC MH ON LTC.MAMH=MH.MAMH JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV " +
                 "WHERE LTC.MAKHOA=? ORDER BY LTC.NIENKHOA DESC, LTC.HOCKY, MH.TENMH, LTC.NHOM", maKhoa);
-            dsgv = jdbc.queryForList("SELECT MAGV, HO + ' ' + TEN AS HOTENGV FROM GIANGVIEN WHERE MAKHOA=? ORDER BY TEN", maKhoa);
+            dsgv = jdbc.queryForList("SELECT RTRIM(MAGV) AS MAGV, HO + ' ' + TEN AS HOTENGV FROM GIANGVIEN WHERE MAKHOA=? ORDER BY TEN", maKhoa);
         }
         model.addAttribute("dsltc", dsltc);
-        model.addAttribute("dsmh", jdbc.queryForList("SELECT MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
+        model.addAttribute("dsmh", jdbc.queryForList("SELECT RTRIM(MAMH) AS MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
         model.addAttribute("dsgv", dsgv);
         model.addAttribute("khoaList", jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
+        model.addAttribute("selectedMaltc", maltc != null ? maltc : 0);
         return "loptinchi";
     }
 
@@ -67,7 +75,9 @@ public class LopTinChiController {
                        @RequestParam(required = false) String lydohuy,
                        @RequestParam(required = false) String maKhoa,
                        HttpSession session, RedirectAttributes ra) {
+        System.out.println("===> DEBUG: LopTinChiController.save action=" + action + ", nienkhoa=" + nienkhoa + ", hocky=" + hocky + ", mamh=" + mamh + ", nhom=" + nhom + ", magv=" + magv + ", batdau=" + ngaybatdauDk + ", ketthuc=" + ngayketthucDk + ", hethan=" + ngayhethanHuy + ", nhomQuyen=" + session.getAttribute("nhomQuyen"));
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
+            System.out.println("===> DEBUG: Blocked due to role: " + session.getAttribute("nhomQuyen"));
             return "redirect:/home";
         }
         
@@ -131,6 +141,10 @@ public class LopTinChiController {
                             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), kh, sosvtoithieu, sosvtoida, huylop,
                         dbBatdau, dbKetthuc, dbHethan, lydo);
+                try {
+                    maltc = jdbc.queryForObject("SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=?",
+                        Integer.class, nienkhoa.trim(), hocky, mamh.trim(), nhom);
+                } catch (Exception e) {}
                 ra.addFlashAttribute("success", "Mở lớp tín chỉ thành công!");
             } else if (maltc != null) {
                 jdbc.update("UPDATE LOPTINCHI SET NIENKHOA=?,HOCKY=?,MAMH=?,NHOM=?,MAGV=?,SOSVTOITHIEU=?,SOSVTOIDA=?,HUYLOP=?," +
@@ -140,13 +154,17 @@ public class LopTinChiController {
                 ra.addFlashAttribute("success", "Cập nhật lớp tín chỉ thành công!");
             }
         } catch (Exception e) {
+            System.err.println("===> DEBUG ERROR: " + e.getMessage());
+            e.printStackTrace();
             ra.addFlashAttribute("error", "Lỗi: " + e.getMessage());
         }
-        return "redirect:/loptinchi";
+        System.out.println("===> DEBUG: Redirecting back to /loptinchi with maltc=" + maltc);
+        return "redirect:/loptinchi" + (maltc != null ? "?maltc=" + maltc : "");
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String delete(@RequestParam int maltc,
+                         @RequestParam(required = false) Integer nextMaltc,
                          HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";
@@ -157,7 +175,8 @@ public class LopTinChiController {
             ra.addFlashAttribute("success", "Xóa lớp tín chỉ thành công!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());
+            return "redirect:/loptinchi?maltc=" + maltc;
         }
-        return "redirect:/loptinchi";
+        return "redirect:/loptinchi" + (nextMaltc != null ? "?maltc=" + nextMaltc : "");
     }
 }

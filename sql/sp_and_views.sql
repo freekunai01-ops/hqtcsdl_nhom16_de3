@@ -188,4 +188,60 @@ GRANT EXECUTE ON [dbo].[sp_TaoTaiKhoan] TO PGV;
 GO
 
 PRINT N'=== PROCEDURES CREATED SUCCESSFULLY ===';
+GO
+
+-- ========================================================
+-- 4. TRIGGER KIỂM TRA ĐIỂM
+-- ========================================================
+-- Trigger kiểm tra điểm hợp lệ
+IF OBJECT_ID('trg_KiemTraDiem', 'TR') IS NOT NULL DROP TRIGGER trg_KiemTraDiem;
+GO
+CREATE TRIGGER trg_KiemTraDiem ON DANGKY
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM inserted
+        WHERE (DIEM_CC IS NOT NULL AND (DIEM_CC < 0 OR DIEM_CC > 10))
+           OR (DIEM_GK IS NOT NULL AND (DIEM_GK < 0 OR DIEM_GK > 10))
+           OR (DIEM_CK IS NOT NULL AND (DIEM_CK < 0 OR DIEM_CK > 10))
+    )
+    BEGIN
+        ROLLBACK
+        RAISERROR(N'Điểm phải từ 0 đến 10!', 16, 1)
+    END
+END
+GO
+
+-- ========================================================
+-- 5. FUNCTIONS TÍNH ĐIỂM VÀ XẾP LOẠI
+-- ========================================================
+IF OBJECT_ID('fn_DiemHetMon', 'FN') IS NOT NULL DROP FUNCTION fn_DiemHetMon;
+GO
+CREATE FUNCTION fn_DiemHetMon(@CC int, @GK float, @CK float)
+RETURNS float
+AS
+BEGIN
+    RETURN ISNULL(@CC,0)*0.1 + ISNULL(@GK,0)*0.3 + ISNULL(@CK,0)*0.6
+END
+GO
+
+IF OBJECT_ID('fn_XepLoai', 'FN') IS NOT NULL DROP FUNCTION fn_XepLoai;
+GO
+CREATE FUNCTION fn_XepLoai(@Diem float)
+RETURNS nvarchar(20)
+AS
+BEGIN
+    RETURN CASE
+        WHEN @Diem >= 8.5 THEN N'Giỏi'
+        WHEN @Diem >= 7.0 THEN N'Khá'
+        WHEN @Diem >= 5.0 THEN N'Trung bình'
+        ELSE N'Yếu'
+    END
+END
+GO
+
+GRANT EXECUTE ON fn_DiemHetMon TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON fn_XepLoai TO PGV, KHOA, NHOM_SV;
+GO
 

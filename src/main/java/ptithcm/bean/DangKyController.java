@@ -131,7 +131,7 @@ public class DangKyController {
             "MH.SOTIET_LT, MH.SOTIET_TH, " +
             "LTC.NGAYHETHAN_HUY, " +
             "CASE WHEN DK.DIEM_CK IS NOT NULL THEN " +
-            "  ROUND(ISNULL(DK.DIEM_CC,0)*0.1 + ISNULL(DK.DIEM_GK,0)*0.3 + ISNULL(DK.DIEM_CK,0)*0.6, 2) " +
+            "  ROUND(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK), 2) " +
             "  ELSE NULL END AS DIEM_HM " +
             "FROM DANGKY DK " +
             "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +

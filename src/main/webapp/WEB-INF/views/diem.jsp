@@ -150,7 +150,7 @@
 </main>
 </div>
 </div>
-<script src="${pageContext.request.contextPath}/js/app.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
 function hmToChu(hm){if(hm>=9)return'A+';if(hm>=8.5)return'A';if(hm>=8)return'B+';if(hm>=7)return'B';if(hm>=6.5)return'C+';if(hm>=5.5)return'C';if(hm>=5)return'D+';if(hm>=4)return'D';return'F';}
 function hmToHe4(hm){if(hm>=9)return 4.0;if(hm>=8.5)return 3.7;if(hm>=8)return 3.5;if(hm>=7)return 3.0;if(hm>=6.5)return 2.5;if(hm>=5.5)return 2.0;if(hm>=5)return 1.5;if(hm>=4)return 1.0;return 0;}

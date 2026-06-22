@@ -169,7 +169,8 @@ public class BaoCaoController {
                     Integer maltc = (Integer) ltcRows.get(0).get("MALTC");
                     String tenmh = jdbc.queryForObject("SELECT TENMH FROM MONHOC WHERE MAMH=?", String.class, mamh.trim());
                     List<Map<String, Object>> data = jdbc.queryForList(
-                            "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK " +
+                            "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK, " +
+                            "dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK) AS DIEM_HM " +
                             "FROM DANGKY DK JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
                             "WHERE DK.MALTC=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
                             "ORDER BY SV.TEN, SV.HO", maltc);
@@ -190,7 +191,7 @@ public class BaoCaoController {
                     if ("hk".equals(phamvi) && nienkhoa != null && !nienkhoa.isEmpty() && hocky != null) {
                         data = jdbc.queryForList(
                                 "SELECT MH.TENMH, " +
-                                "MAX(ISNULL(DK.DIEM_CC,0)*0.1 + ISNULL(DK.DIEM_GK,0)*0.3 + ISNULL(DK.DIEM_CK,0)*0.6) AS DIEM " +
+                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
                                 "FROM DANGKY DK " +
                                 "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
                                 "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
@@ -201,7 +202,7 @@ public class BaoCaoController {
                     } else {
                         data = jdbc.queryForList(
                                 "SELECT MH.TENMH, " +
-                                "MAX(ISNULL(DK.DIEM_CC,0)*0.1 + ISNULL(DK.DIEM_GK,0)*0.3 + ISNULL(DK.DIEM_CK,0)*0.6) AS DIEM " +
+                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
                                 "FROM DANGKY DK " +
                                 "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
                                 "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
@@ -274,7 +275,7 @@ public class BaoCaoController {
 
                         diemData = jdbc.queryForList(
                                 "SELECT DK.MASV, LTC.MAMH, " +
-                                "MAX(ISNULL(DK.DIEM_CC,0)*0.1 + ISNULL(DK.DIEM_GK,0)*0.3 + ISNULL(DK.DIEM_CK,0)*0.6) AS DIEM " +
+                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
                                 "FROM DANGKY DK " +
                                 "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
                                 "JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
@@ -294,7 +295,7 @@ public class BaoCaoController {
 
                         diemData = jdbc.queryForList(
                                 "SELECT DK.MASV, LTC.MAMH, " +
-                                "MAX(ISNULL(DK.DIEM_CC,0)*0.1 + ISNULL(DK.DIEM_GK,0)*0.3 + ISNULL(DK.DIEM_CK,0)*0.6) AS DIEM " +
+                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
                                 "FROM DANGKY DK " +
                                 "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
                                 "JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +

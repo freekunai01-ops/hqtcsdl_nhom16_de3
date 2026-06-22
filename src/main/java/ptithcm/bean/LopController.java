@@ -18,12 +18,14 @@ public class LopController {
     private ConnectionHelper connHelper;
 
     @RequestMapping(method = RequestMethod.GET)
-    public String showLop(HttpSession session, ModelMap model) {
+    public String showLop(@RequestParam(value = "malop", required = false) String malop,
+                          HttpSession session, ModelMap model) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) {
             return "redirect:/home";
         }
         loadData(session, model);
+        model.addAttribute("selectedMalop", malop != null ? malop.trim() : "");
         return "lop";
     }
 
@@ -44,26 +46,34 @@ public class LopController {
             ra.addFlashAttribute("error", "Lỗi: Mã lớp không được bỏ trống!");
             return "redirect:/lop";
         }
+        
+        // Helper to set inputs back to view in case of redirect
+        ra.addFlashAttribute("failedAction", action);
+        ra.addFlashAttribute("failedMaLop", maLop);
+        ra.addFlashAttribute("failedTenLop", tenLop);
+        ra.addFlashAttribute("failedKhoaHoc", khoaHoc);
+        ra.addFlashAttribute("failedMaKhoa", maKhoa);
+
         if (tenLop == null || tenLop.trim().isEmpty()) {
             ra.addFlashAttribute("error", "Lỗi: Tên lớp không được bỏ trống!");
-            return "redirect:/lop";
+            return "redirect:/lop?malop=" + maLop.trim();
         }
         if (khoaHoc == null || khoaHoc.trim().isEmpty()) {
             ra.addFlashAttribute("error", "Lỗi: Khóa học không được bỏ trống!");
-            return "redirect:/lop";
+            return "redirect:/lop?malop=" + maLop.trim();
         }
 
         // Validate KHOAHOC format: yyyy-yyyy
         String kh = khoaHoc.trim();
         if (!kh.matches("\\d{4}-\\d{4}")) {
             ra.addFlashAttribute("error", "Lỗi: Khóa học phải có dạng yyyy-yyyy (ví dụ: 2024-2028)!");
-            return "redirect:/lop";
+            return "redirect:/lop?malop=" + maLop.trim();
         }
         int startYear = Integer.parseInt(kh.substring(0, 4));
         int endYear = Integer.parseInt(kh.substring(5, 9));
         if (endYear <= startYear) {
             ra.addFlashAttribute("error", "Lỗi: Năm kết thúc phải lớn hơn năm bắt đầu!");
-            return "redirect:/lop";
+            return "redirect:/lop?malop=" + maLop.trim();
         }
         
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
@@ -73,25 +83,32 @@ public class LopController {
             int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
             if (startYear < currentYear) {
                 ra.addFlashAttribute("error", "Lỗi: Không được thêm lớp cho khóa học trong quá khứ (" + khoaHoc + " < " + currentYear + ")!");
-                return "redirect:/lop";
+                return "redirect:/lop?malop=" + maLop.trim();
             }
             // Check duplicate MALOP
             int count = jdbc.queryForObject("SELECT COUNT(*) FROM LOP WHERE MALOP=?", Integer.class, maLop.trim());
             if (count > 0) {
                 ra.addFlashAttribute("error", "Lỗi: Mã lớp " + maLop.trim() + " đã tồn tại!");
-                return "redirect:/lop";
+                return "redirect:/lop?malop=" + maLop.trim();
             }
         } else {
-            // Update: check if trying to change MAKHOA when students exist
+            // Update: check if trying to change MAKHOA or KHOAHOC when students exist
             int svCount = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM SINHVIEN WHERE MALOP=?", Integer.class, maLop.trim());
             if (svCount > 0) {
-                // Get current MAKHOA
-                String currentMaKhoa = jdbc.queryForObject(
-                    "SELECT MAKHOA FROM LOP WHERE MALOP=?", String.class, maLop.trim());
+                // Get current MAKHOA and KHOAHOC
+                Map<String, Object> currentClass = jdbc.queryForMap(
+                    "SELECT MAKHOA, KHOAHOC FROM LOP WHERE MALOP=?", maLop.trim());
+                String currentMaKhoa = currentClass.get("MAKHOA") != null ? currentClass.get("MAKHOA").toString().trim() : "";
+                String currentKhoaHoc = currentClass.get("KHOAHOC") != null ? currentClass.get("KHOAHOC").toString().trim() : "";
+                
                 if (!maKhoa.trim().equals(currentMaKhoa)) {
-                    ra.addFlashAttribute("error", "Lỗi: Không được đổi khoa cho lớp " + maLop.trim() + " vì đã có " + svCount + " sinh viên!");
-                    return "redirect:/lop";
+                    ra.addFlashAttribute("error", "Lỗi: Không được đổi khoa cho lớp " + maLop.trim() + " vì đã có sinh viên!");
+                    return "redirect:/lop?malop=" + maLop.trim();
+                }
+                if (!kh.equals(currentKhoaHoc)) {
+                    ra.addFlashAttribute("error", "Lỗi: Không được đổi khóa học cho lớp " + maLop.trim() + " vì đã có sinh viên!");
+                    return "redirect:/lop?malop=" + maLop.trim();
                 }
             }
         }
@@ -108,12 +125,14 @@ public class LopController {
             }
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+            return "redirect:/lop?malop=" + maLop.trim();
         }
-        return "redirect:/lop";
+        return "redirect:/lop?malop=" + maLop.trim();
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
     public String deleteLop(@RequestParam String maLop,
+                            @RequestParam(required = false) String nextMaLop,
                             HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";
@@ -125,7 +144,7 @@ public class LopController {
             "SELECT COUNT(*) FROM SINHVIEN WHERE MALOP=?", Integer.class, maLop.trim());
         if (svCount > 0) {
             ra.addFlashAttribute("error", "Không thể xóa lớp " + maLop.trim() + " vì đã có " + svCount + " sinh viên! Xóa chỉ cho lớp tạo nhầm, chưa có SV.");
-            return "redirect:/lop";
+            return "redirect:/lop?malop=" + maLop.trim();
         }
         
         // Check if graduated
@@ -136,7 +155,7 @@ public class LopController {
                 int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
                 if (endYear <= currentYear) {
                     ra.addFlashAttribute("error", "Không thể xóa lớp " + maLop.trim() + " vì đã tốt nghiệp (khóa " + khoaHoc + "). Dữ liệu lịch sử phải được giữ lại.");
-                    return "redirect:/lop";
+                    return "redirect:/lop?malop=" + maLop.trim();
                 }
             }
         } catch (Exception e) { /* ignore parse errors */ }
@@ -146,8 +165,9 @@ public class LopController {
             ra.addFlashAttribute("success", "Xóa lớp " + maLop.trim() + " thành công!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());
+            return "redirect:/lop?malop=" + maLop.trim();
         }
-        return "redirect:/lop";
+        return "redirect:/lop" + (nextMaLop != null && !nextMaLop.trim().isEmpty() ? "?malop=" + nextMaLop.trim() : "");
     }
 
     private void loadData(HttpSession session, ModelMap model) {

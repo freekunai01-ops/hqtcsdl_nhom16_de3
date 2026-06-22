@@ -55,13 +55,13 @@
                         <div class="form-left-pane">
                             <div class="pane-title">Thông tin giảng viên</div>
                             <div class="pane-grid">
-                                <div class="pane-row"><span class="pane-label">Mã GV:</span><div class="pane-input-wrapper"><input type="text" id="gvPK" name="magv" data-field="MAGV" class="pane-input" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Họ:</span><div class="pane-input-wrapper"><input type="text" name="ho" data-field="HO" class="pane-input" maxlength="50" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Tên:</span><div class="pane-input-wrapper"><input type="text" name="ten" data-field="TEN" class="pane-input" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Học vị:</span><div class="pane-input-wrapper"><input type="text" name="hocvi" data-field="HOCVI" class="pane-input" maxlength="20" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Học hàm:</span><div class="pane-input-wrapper"><input type="text" name="hocham" data-field="HOCHAM" class="pane-input" maxlength="20" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Chuyên môn:</span><div class="pane-input-wrapper"><input type="text" name="chuyenmon" data-field="CHUYENMON" class="pane-input" maxlength="50" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Khoa:</span><div class="pane-input-wrapper"><c:choose><c:when test="${sessionScope.nhomQuyen == 'PGV'}"><select name="maKhoa" data-field="MAKHOA" class="pane-input" style="padding:4px 6px;" required><c:forEach items="${khoaList}" var="k"><option value="${k.MAKHOA}">${k.MAKHOA} - ${k.TENKHOA}</option></c:forEach></select></c:when><c:otherwise><input type="text" class="pane-input" value="${sessionScope.maKhoa}" disabled><input type="hidden" name="maKhoa" data-field="MAKHOA" value="${sessionScope.maKhoa}"></c:otherwise></c:choose></div></div>
+                                <div class="pane-row"><span class="pane-label">Mã GV:</span><div class="pane-input-wrapper"><input type="text" id="gvPK" name="magv" data-field="MAGV" class="pane-input" value="${not empty error ? failedMagv : ''}" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Họ:</span><div class="pane-input-wrapper"><input type="text" name="ho" data-field="HO" class="pane-input" value="${not empty error ? failedHo : ''}" maxlength="50" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Tên:</span><div class="pane-input-wrapper"><input type="text" name="ten" data-field="TEN" class="pane-input" value="${not empty error ? failedTen : ''}" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Học vị:</span><div class="pane-input-wrapper"><input type="text" name="hocvi" data-field="HOCVI" class="pane-input" value="${not empty error ? failedHocvi : ''}" maxlength="20" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Học hàm:</span><div class="pane-input-wrapper"><input type="text" name="hocham" data-field="HOCHAM" class="pane-input" value="${not empty error ? failedHocham : ''}" maxlength="20" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Chuyên môn:</span><div class="pane-input-wrapper"><input type="text" name="chuyenmon" data-field="CHUYENMON" class="pane-input" value="${not empty error ? failedChuyenmon : ''}" maxlength="50" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Khoa:</span><div class="pane-input-wrapper"><c:choose><c:when test="${sessionScope.nhomQuyen == 'PGV'}"><select name="maKhoa" data-field="MAKHOA" class="pane-input" style="padding:4px 6px;" required><c:forEach items="${khoaList}" var="k"><option value="${k.MAKHOA}" ${not empty error && failedMaKhoa == k.MAKHOA ? 'selected' : ''}>${k.MAKHOA} - ${k.TENKHOA}</option></c:forEach></select></c:when><c:otherwise><input type="text" class="pane-input" value="${sessionScope.maKhoa}" disabled><input type="hidden" name="maKhoa" data-field="MAKHOA" value="${sessionScope.maKhoa}"></c:otherwise></c:choose></div></div>
                             </div>
                             <div class="info-panel" id="gvInfoPanel">
                                 <div class="info-row"><span class="info-label">Số LTC phụ trách:</span><span class="info-value" id="infoSoLTC">—</span></div>
@@ -96,7 +96,8 @@
                                     </tr></thead>
                                     <tbody>
                                         <c:forEach items="${dsgv}" var="g">
-                                            <tr data-magv="${g.MAGV}" data-soltc="${g.SO_LTC}" data-hocvi="${g.HOCVI}" data-hocham="${g.HOCHAM}">
+                                            <tr data-magv="${g.MAGV}" data-soltc="${g.SO_LTC}" data-hocvi="${g.HOCVI}" data-hocham="${g.HOCHAM}"
+                                                class="${g.MAGV.trim() == selectedMagv ? 'selected' : ''}">
                                                 <td data-col="MAGV">${g.MAGV}</td>
                                                 <td>${g.HO} ${g.TEN}<span style="display:none" data-col="HO">${g.HO}</span><span style="display:none" data-col="TEN">${g.TEN}</span></td>
                                                 <td data-col="HOCVI">${g.HOCVI}</td>
@@ -117,7 +118,7 @@
                         <c:if test="${sessionScope.nhomQuyen == 'PGV'}">
                             <button type="button" class="win-form-btn" onclick="btnThemGV()"><i class="fas fa-plus"></i> Thêm</button>
                             <button type="button" class="win-form-btn btn-delete" onclick="btnXoaGV()"><i class="fas fa-trash"></i> Xóa</button>
-                            <button type="submit" class="win-form-btn btn-save"><i class="fas fa-save"></i> Ghi</button>
+                            <button type="button" class="win-form-btn btn-save" onclick="validateAndSubmitGV()"><i class="fas fa-save"></i> Ghi</button>
                             <button type="button" class="win-form-btn" onclick="btnPhucHoi()"><i class="fas fa-undo"></i> Phục hồi</button>
                         </c:if>
                         <button type="button" class="win-form-btn" onclick="btnThoat('${pageContext.request.contextPath}/home')"><i class="fas fa-sign-out-alt"></i> Thoát</button>
@@ -132,7 +133,7 @@
     </main>
 </div>
 </div>
-<script src="${pageContext.request.contextPath}/js/app.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     initTableSelection('gvTable', 'gv');
@@ -145,6 +146,9 @@ document.addEventListener("DOMContentLoaded", function() {
             var soltc = this.getAttribute('data-soltc') || '0';
             var hv = this.getAttribute('data-hocvi') || '';
             var hh = this.getAttribute('data-hocham') || '';
+            // Lock PK field — MAGV không được sửa khi đang update
+            var pk = document.getElementById('gvPK');
+            if (pk) { pk.readOnly = true; pk.style.background = '#f1f5f9'; }
             document.getElementById('selectedGvStatus').textContent = 'Đã chọn: ' + magv + ' — ' + name;
             document.getElementById('infoSoLTC').textContent = soltc;
             var cap = hh ? hh : hv; document.getElementById('infoCapBac').textContent = cap || '—';
@@ -155,9 +159,54 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     });
+
+    var activeMagv = '${selectedMagv}';
+    if (activeMagv) {
+        var foundRow = null;
+        rows.forEach(function(row) {
+            if (row.getAttribute('data-magv').trim() === activeMagv) {
+                foundRow = row;
+            }
+        });
+        if (foundRow) {
+            var hasError = ${not empty error};
+            if (hasError) {
+                foundRow.classList.add('selected');
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                var ho = foundRow.querySelector('[data-col="HO"]'); var ten = foundRow.querySelector('[data-col="TEN"]');
+                var name = (ho?ho.textContent.trim():'') + ' ' + (ten?ten.textContent.trim():'');
+                var soltc = foundRow.getAttribute('data-soltc') || '0';
+                var hv = foundRow.getAttribute('data-hocvi') || '';
+                var hh = foundRow.getAttribute('data-hocham') || '';
+                document.getElementById('selectedGvStatus').textContent = 'Đã chọn: ' + activeMagv + ' — ' + name;
+                document.getElementById('infoSoLTC').textContent = soltc;
+                var cap = hh ? hh : hv; document.getElementById('infoCapBac').textContent = cap || '—';
+                if (parseInt(soltc) > 0) {
+                    document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-dangday">Đang giảng dạy</span>';
+                } else {
+                    document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-chuapc">Chưa phân công</span>';
+                }
+
+                // Restore action state
+                document.getElementById('gvAction').value = '${failedAction}';
+                // Configure fields readOnly/disabled state based on action
+                var pkField = document.getElementById('gvPK');
+                if (pkField && '${failedAction}' === 'update') {
+                    pkField.readOnly = true;
+                    pkField.style.background = '#f1f5f9';
+                }
+            } else {
+                foundRow.click();
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }
 });
 function btnThemGV() {
     btnThem('gv');
+    // Mở khóa PK — thêm mới cần nhập MAGV
+    var pkF = document.getElementById('gvPK');
+    if (pkF) { pkF.readOnly = false; pkF.style.background = ''; }
     document.getElementById('infoSoLTC').textContent = '0';
     document.getElementById('infoCapBac').textContent = '—';
     document.getElementById('infoTrangThai').innerHTML = '<span class="badge-status badge-chuapc">Chưa phân công</span>';
@@ -171,10 +220,22 @@ function btnXoaGV() {
         if (soltc && parseInt(soltc) > 0) { alert('Không thể xóa! GV ' + pk.value + ' đã phụ trách ' + soltc + ' lớp tín chỉ.'); return; }
     }
     if (confirm('Xóa giảng viên ' + pk.value + '?')) {
+        var nextMagv = '';
+        if (row) {
+            var nextRow = row.nextElementSibling;
+            if (!nextRow) {
+                nextRow = row.previousElementSibling;
+            }
+            if (nextRow) {
+                var cell = nextRow.querySelector('[data-col="MAGV"]');
+                if (cell) nextMagv = cell.textContent.trim();
+            }
+        }
         var f = document.createElement('form'); f.method='POST';
         f.action = '${pageContext.request.contextPath}/giangvien/delete';
-        var i = document.createElement('input'); i.type='hidden'; i.name='magv'; i.value=pk.value.trim();
-        f.appendChild(i); document.body.appendChild(f); f.submit();
+        var i = document.createElement('input'); i.type='hidden'; i.name='magv'; i.value=pk.value.trim(); f.appendChild(i);
+        var i2 = document.createElement('input'); i2.type='hidden'; i2.name='nextMagv'; i2.value=nextMagv; f.appendChild(i2);
+        document.body.appendChild(f); f.submit();
     }
 }
 function filterGV(type, el) {
@@ -191,6 +252,50 @@ function filterGV(type, el) {
             default: r.style.display = '';
         }
     });
+}
+// ===== VALIDATION GIẢNG VIÊN =====
+var GV_NAME_REGEX = /^[A-Za-zÀ-ỹà-ỹĂăÂâĐđÊêÔôƠơƯưÁáÀàẢảÃãẠạẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặÉéÈèẺẻẼẽẸẹẾếỀềỂểỄễỆệÍíÌìỈỉĨĩỊịÓóÒòỎỏÕõỌọỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợÚúÙùỦủŨũỤụỨứỪừỬửỮữỰựÝýỲỳỶỷỸỹỴỵ\s]+$/;
+function gvSetError(inputEl, msg) {
+    var wrapper = inputEl.closest('.pane-input-wrapper') || inputEl.parentElement;
+    inputEl.style.border = '1.5px solid #dc2626';
+    var errId = 'err_gv_' + (inputEl.name || inputEl.id);
+    var existing = document.getElementById(errId);
+    if (existing) existing.remove();
+    var span = document.createElement('span');
+    span.id = errId;
+    span.style.cssText = 'color:#dc2626;font-size:10.5px;font-weight:bold;display:block;margin-top:2px;';
+    span.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + msg;
+    wrapper.appendChild(span);
+}
+function gvClearError(inputEl) {
+    if (!inputEl) return;
+    inputEl.style.border = '';
+    var errId = 'err_gv_' + (inputEl.name || inputEl.id);
+    var existing = document.getElementById(errId);
+    if (existing) existing.remove();
+}
+function validateAndSubmitGV() {
+    var pk = document.getElementById('gvPK');
+    var ho = document.querySelector('input[name="ho"]');
+    var ten = document.querySelector('input[name="ten"]');
+    var hocvi = document.querySelector('input[name="hocvi"]');
+    var hocham = document.querySelector('input[name="hocham"]');
+    var chuyenmon = document.querySelector('input[name="chuyenmon"]');
+    var ok = true;
+    [pk, ho, ten, hocvi, hocham, chuyenmon].forEach(function(el) { if (el) gvClearError(el); });
+
+    if (pk && !pk.value.trim()) { gvSetError(pk, 'Mã GV không được để trống.'); ok = false; }
+    if (!ho || !ho.value.trim()) { gvSetError(ho, 'Họ không được để trống.'); ok = false; }
+    else if (!GV_NAME_REGEX.test(ho.value.trim())) { gvSetError(ho, 'Họ không được chứa số hoặc ký tự đặc biệt.'); ok = false; }
+    if (!ten || !ten.value.trim()) { gvSetError(ten, 'Tên không được để trống.'); ok = false; }
+    else if (!GV_NAME_REGEX.test(ten.value.trim())) { gvSetError(ten, 'Tên không được chứa số hoặc ký tự đặc biệt.'); ok = false; }
+    if (hocvi && !hocvi.value.trim()) { gvSetError(hocvi, 'Học vị không được để trống.'); ok = false; }
+    if (hocham && hocham.value.trim()) {
+        var hh = hocham.value.trim().toUpperCase();
+        if (hh !== 'PGS' && hh !== 'GS') { gvSetError(hocham, 'Học hàm chỉ được để trống, PGS hoặc GS.'); ok = false; }
+    }
+    if (!chuyenmon || !chuyenmon.value.trim()) { if(chuyenmon) gvSetError(chuyenmon, 'Chuyên môn không được để trống.'); ok = false; }
+    if (ok) document.getElementById('gvForm').submit();
 }
 </script>
 </body>

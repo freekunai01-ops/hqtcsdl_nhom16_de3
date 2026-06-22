@@ -569,7 +569,7 @@
 </div>
 </div><%-- close app-window-container --%>
 
-<script src="${pageContext.request.contextPath}/js/app.js?v=2"></script>
+<script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
     var isSV = '${sessionScope.nhomQuyen}' === 'SV';
     function updateReportFields() {

@@ -21,7 +21,8 @@ public class TaiKhoanController {
     private ConnectionHelper connHelper;
 
     @RequestMapping(method = RequestMethod.GET)
-    public String show(HttpSession session, ModelMap model) {
+    public String show(@RequestParam(value = "login", required = false) String login,
+                       HttpSession session, ModelMap model) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) {
             return "redirect:/home";
@@ -66,6 +67,7 @@ public class TaiKhoanController {
         
         List<Map<String, Object>> khoaList = jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA");
         model.addAttribute("khoaList", khoaList);
+        model.addAttribute("selectedLogin", login != null ? login.trim() : "");
         return "taikhoan";
     }
 
@@ -105,7 +107,7 @@ public class TaiKhoanController {
                 } catch (Exception ex) {}
                 syncLoginStatus(jdbc, login.trim(), trangthai);
                 ra.addFlashAttribute("success", "Cập nhật tài khoản hệ thống thành công!");
-                return "redirect:/taikhoan";
+                return "redirect:/taikhoan?login=" + login.trim();
             }
 
             Long count = jdbc.queryForObject("SELECT COUNT(*) FROM TaiKhoan WHERE MAGV=?", Long.class, linkedUser.trim());
@@ -140,7 +142,7 @@ public class TaiKhoanController {
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Lỗi: " + e.getMessage());
         }
-        return "redirect:/taikhoan";
+        return "redirect:/taikhoan?login=" + login.trim();
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)

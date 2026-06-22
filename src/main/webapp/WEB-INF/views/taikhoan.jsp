@@ -430,6 +430,7 @@
                                     <tbody>
                                         <c:forEach items="${dsTaiKhoan}" var="tk">
                                             <tr onclick="selectTkRow(this)" style="cursor: pointer;"
+                                                class="${tk.Login.trim() == selectedLogin ? 'selected' : ''}"
                                                 data-login="${tk.Login}" 
                                                 data-magv="${tk.MAGV}" 
                                                 data-quyen="${tk.NhomQuyen}" 
@@ -494,6 +495,21 @@
     window.addEventListener('load', function() {
         onQuyenChange();
         filterTableRows();
+
+        var activeLogin = '${selectedLogin}';
+        if (activeLogin) {
+            var rows = document.querySelectorAll('#tkTable tbody tr');
+            var foundRow = null;
+            rows.forEach(function(row) {
+                if (row.getAttribute('data-login').trim() === activeLogin) {
+                    foundRow = row;
+                }
+            });
+            if (foundRow) {
+                selectTkRow(foundRow);
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
     });
 
     // Handle Nhóm quyền selector changes

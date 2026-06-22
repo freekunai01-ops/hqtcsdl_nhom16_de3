@@ -221,7 +221,7 @@
 </main>
 </div>
 </div>
-<script src="${pageContext.request.contextPath}/js/app.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
 var MAX_MON=8, daDangKyHK=${not empty daDangKyHK?daDangKyHK:0};
 function updateSelectedCount(){

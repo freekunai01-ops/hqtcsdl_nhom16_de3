@@ -119,6 +119,7 @@ function initTableSearch(tableId, searchInputId) {
 
 window.tableCurrentPages = {};
 window.tablePageSize = 8;
+window.tablePageNeedsSync = {};
 
 function initColumnFilters(tableId) {
     var table = document.getElementById(tableId);
@@ -126,6 +127,7 @@ function initColumnFilters(tableId) {
 
     window.activeTableFilters[tableId] = {};
     window.tableCurrentPages[tableId] = 1;
+    window.tablePageNeedsSync[tableId] = true;
 
     var headers = table.querySelectorAll('thead th[data-sort-key]');
     headers.forEach(function(th) {
@@ -389,6 +391,22 @@ function displayTablePage(tableId) {
     var totalMatching = matchingRows.length;
     var totalPages = Math.ceil(totalMatching / pageSize);
 
+    // If sync requested (e.g. on load or row update), check where selected row is in matchingRows
+    if (window.tablePageNeedsSync[tableId]) {
+        var selectedIdx = -1;
+        for (var i = 0; i < matchingRows.length; i++) {
+            if (matchingRows[i].classList.contains('selected')) {
+                selectedIdx = i;
+                break;
+            }
+        }
+        if (selectedIdx !== -1) {
+            currentPage = Math.floor(selectedIdx / pageSize) + 1;
+            window.tableCurrentPages[tableId] = currentPage;
+        }
+        delete window.tablePageNeedsSync[tableId];
+    }
+
     // Bound current page
     if (currentPage > totalPages) {
         currentPage = Math.max(1, totalPages);
@@ -520,6 +538,11 @@ function btnPhucHoi() {
     window.location.reload();
 }
 
+function syncTableToSelectedRow(tableId) {
+    window.tablePageNeedsSync[tableId] = true;
+    displayTablePage(tableId);
+}
+
 function btnThoat(homeUrl) {
     window.location.href = homeUrl;
 }
@@ -581,6 +604,15 @@ document.addEventListener('DOMContentLoaded', function() {
             initColumnFilters(t.id);
         }
     });
+
+    // Run a post-init sync after all inline DOMContentLoaded listeners have selected their rows
+    setTimeout(function() {
+        document.querySelectorAll('.win-table').forEach(function(t) {
+            if (t.id) {
+                syncTableToSelectedRow(t.id);
+            }
+        });
+    }, 0);
 
     // Close filter dropdowns when scrolling OUTSIDE the dropdown
     window.addEventListener('scroll', function(e) {

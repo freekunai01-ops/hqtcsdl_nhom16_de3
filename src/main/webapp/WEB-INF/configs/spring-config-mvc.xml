@@ -18,6 +18,7 @@
     <mvc:annotation-driven/>
 
     <bean id="viewResolver" p:prefix="/WEB-INF/views/" p:suffix=".jsp"
+        p:contentType="text/html; charset=UTF-8"
         class="org.springframework.web.servlet.view.InternalResourceViewResolver"/>
 
     <context:component-scan base-package="ptithcm.bean"/>

@@ -57,10 +57,10 @@
                         <div class="form-left-pane">
                             <div class="pane-title">Thông tin lớp</div>
                             <div class="pane-grid">
-                                <div class="pane-row"><span class="pane-label">Mã lớp:</span><div class="pane-input-wrapper"><input type="text" id="lopPK" name="maLop" data-field="MALOP" class="pane-input" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Tên lớp:</span><div class="pane-input-wrapper"><input type="text" name="tenLop" data-field="TENLOP" class="pane-input" maxlength="50" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Khóa học:</span><div class="pane-input-wrapper"><input type="text" name="khoaHoc" data-field="KHOAHOC" class="pane-input" maxlength="9" placeholder="2022-2026" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                <div class="pane-row"><span class="pane-label">Khoa:</span><div class="pane-input-wrapper"><c:choose><c:when test="${sessionScope.nhomQuyen == 'PGV'}"><select name="maKhoa" data-field="MAKHOA" class="pane-input" style="padding:4px 6px;" required><c:forEach items="${khoaList}" var="k"><option value="${k.MAKHOA}">${k.MAKHOA} - ${k.TENKHOA}</option></c:forEach></select></c:when><c:otherwise><input type="text" class="pane-input" value="${sessionScope.maKhoa}" disabled><input type="hidden" name="maKhoa" data-field="MAKHOA" value="${sessionScope.maKhoa}"></c:otherwise></c:choose></div></div>
+                                <div class="pane-row"><span class="pane-label">Mã lớp:</span><div class="pane-input-wrapper"><input type="text" id="lopPK" name="maLop" data-field="MALOP" class="pane-input" value="${not empty error ? failedMaLop : ''}" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Tên lớp:</span><div class="pane-input-wrapper"><input type="text" name="tenLop" data-field="TENLOP" class="pane-input" value="${not empty error ? failedTenLop : ''}" maxlength="50" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Khóa học:</span><div class="pane-input-wrapper"><input type="text" name="khoaHoc" data-field="KHOAHOC" class="pane-input" value="${not empty error ? failedKhoaHoc : ''}" maxlength="9" placeholder="2022-2026" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                <div class="pane-row"><span class="pane-label">Khoa:</span><div class="pane-input-wrapper"><c:choose><c:when test="${sessionScope.nhomQuyen == 'PGV'}"><select name="maKhoa" data-field="MAKHOA" class="pane-input" style="padding:4px 6px;" required><c:forEach items="${khoaList}" var="k"><option value="${k.MAKHOA}" ${not empty error && failedMaKhoa == k.MAKHOA ? 'selected' : ''}>${k.MAKHOA} - ${k.TENKHOA}</option></c:forEach></select></c:when><c:otherwise><input type="text" class="pane-input" value="${sessionScope.maKhoa}" disabled><input type="hidden" name="maKhoa" data-field="MAKHOA" value="${sessionScope.maKhoa}"></c:otherwise></c:choose></div></div>
                             </div>
                             <div class="info-panel" id="lopInfoPanel" style="display:none;">
                                 <div class="info-row"><span class="info-label">Trạng thái:</span><span class="info-value" id="infoTrangThai">—</span></div>
@@ -95,7 +95,8 @@
                                     </tr></thead>
                                     <tbody>
                                         <c:forEach items="${dslop}" var="l">
-                                            <tr data-malop="${l.MALOP}" data-siso="${l.SISO}" data-totnghiep="${l.TOTNGHIEP}">
+                                            <tr data-malop="${l.MALOP}" data-siso="${l.SISO}" data-totnghiep="${l.TOTNGHIEP}"
+                                                class="${l.MALOP.trim() == selectedMalop ? 'selected' : ''}">
                                                 <td data-col="MALOP">${l.MALOP}</td>
                                                 <td data-col="TENLOP">${l.TENLOP}</td>
                                                 <td data-col="KHOAHOC">${l.KHOAHOC}</td>
@@ -112,9 +113,9 @@
                     </div>
                     <div class="form-buttons-row">
                         <c:if test="${sessionScope.nhomQuyen == 'PGV'}">
-                            <button type="button" class="win-form-btn" onclick="btnThem('lop')"><i class="fas fa-plus"></i> Thêm</button>
+                            <button type="button" class="win-form-btn" onclick="btnThemLop()"><i class="fas fa-plus"></i> Thêm</button>
                             <button type="button" class="win-form-btn btn-delete" onclick="btnXoaLop()"><i class="fas fa-trash"></i> Xóa</button>
-                            <button type="submit" class="win-form-btn btn-save"><i class="fas fa-save"></i> Ghi</button>
+                            <button type="button" class="win-form-btn btn-save" onclick="validateAndSubmitLop()"><i class="fas fa-save"></i> Ghi</button>
                             <button type="button" class="win-form-btn" onclick="btnPhucHoi()"><i class="fas fa-undo"></i> Phục hồi</button>
                         </c:if>
                         <button type="button" class="win-form-btn" onclick="btnThoat('${pageContext.request.contextPath}/home')"><i class="fas fa-sign-out-alt"></i> Thoát</button>
@@ -129,7 +130,7 @@
     </main>
 </div>
 </div>
-<script src="${pageContext.request.contextPath}/js/app.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
 var currentStatusFilter = 'all';
 document.addEventListener("DOMContentLoaded", function() {
@@ -141,6 +142,9 @@ document.addEventListener("DOMContentLoaded", function() {
             var siso = parseInt(this.getAttribute('data-siso') || '0');
             var tn = parseInt(this.getAttribute('data-totnghiep') || '0');
             var kh = this.querySelector('[data-col="KHOAHOC"]').textContent.trim();
+            // Lock PK field — MALOP không được sửa khi đang update
+            var pk = document.getElementById('lopPK');
+            if (pk) { pk.readOnly = true; pk.style.background = '#f1f5f9'; }
             document.getElementById('selectedLopStatus').textContent = 'Đã chọn: ' + malop;
             document.getElementById('statSiSo').textContent = siso;
             var ip = document.getElementById('lopInfoPanel'); ip.style.display = '';
@@ -153,8 +157,94 @@ document.addEventListener("DOMContentLoaded", function() {
             if (siso > 0) { dn.style.display = ''; dt.textContent = 'Xóa chỉ cho lớp tạo nhầm, chưa có SV và chưa tốt nghiệp.'; }
             else if (tn === 1) { dn.style.display = ''; dt.textContent = 'Không xóa lớp đã tốt nghiệp — dữ liệu lịch sử cần giữ lại.'; }
             else { dn.style.display = 'none'; }
+
+            // Nếu lớp đã có sinh viên, không cho sửa Khóa học và Khoa
+            var khInput = document.querySelector('input[name="khoaHoc"]');
+            var mkSelect = document.querySelector('select[name="maKhoa"]');
+            if (siso > 0) {
+                if (khInput) {
+                    khInput.readOnly = true;
+                    khInput.style.background = '#f1f5f9';
+                    khInput.title = 'Không thể sửa Khóa học của lớp đã có sinh viên!';
+                }
+                if (mkSelect) {
+                    mkSelect.style.pointerEvents = 'none';
+                    mkSelect.style.background = '#f1f5f9';
+                    mkSelect.title = 'Không thể sửa Khoa của lớp đã có sinh viên!';
+                }
+            } else {
+                if (khInput) {
+                    khInput.readOnly = false;
+                    khInput.style.background = '';
+                    khInput.title = '';
+                }
+                if (mkSelect) {
+                    mkSelect.style.pointerEvents = '';
+                    mkSelect.style.background = '';
+                    mkSelect.title = '';
+                }
+            }
         });
     });
+
+    var activeMalop = '${selectedMalop}';
+    if (activeMalop) {
+        var foundRow = null;
+        rows.forEach(function(row) {
+            if (row.getAttribute('data-malop').trim() === activeMalop) {
+                foundRow = row;
+            }
+        });
+        if (foundRow) {
+            var hasError = ${not empty error};
+            if (hasError) {
+                foundRow.classList.add('selected');
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                var siso = parseInt(foundRow.getAttribute('data-siso') || '0');
+                var tn = parseInt(foundRow.getAttribute('data-totnghiep') || '0');
+                var kh = foundRow.querySelector('[data-col="KHOAHOC"]').textContent.trim();
+                document.getElementById('selectedLopStatus').textContent = 'Đã chọn: ' + activeMalop;
+                document.getElementById('statSiSo').textContent = siso;
+                var ip = document.getElementById('lopInfoPanel'); ip.style.display = '';
+                document.getElementById('infoTrangThai').innerHTML = tn === 1
+                    ? '<span class="badge-status badge-totnghiep">Đã tốt nghiệp</span>'
+                    : '<span class="badge-status badge-danghoc">Đang học</span>';
+                document.getElementById('infoNamKT').textContent = kh.length >= 9 ? kh.substring(5, 9) : '—';
+                document.getElementById('infoSiSo').textContent = siso;
+                var dn = document.getElementById('deleteNote'); var dt = document.getElementById('deleteNoteText');
+                if (siso > 0) { dn.style.display = ''; dt.textContent = 'Xóa chỉ cho lớp tạo nhầm, chưa có SV và chưa tốt nghiệp.'; }
+                else if (tn === 1) { dn.style.display = ''; dt.textContent = 'Không xóa lớp đã tốt nghiệp — dữ liệu lịch sử cần giữ lại.'; }
+                else { dn.style.display = 'none'; }
+
+                // Restore action state
+                document.getElementById('lopAction').value = '${failedAction}';
+                // Configure fields readOnly/disabled state based on action
+                var pkField = document.getElementById('lopPK');
+                if (pkField && '${failedAction}' === 'update') {
+                    pkField.readOnly = true;
+                    pkField.style.background = '#f1f5f9';
+                }
+                
+                var khInput = document.querySelector('input[name="khoaHoc"]');
+                var mkSelect = document.querySelector('select[name="maKhoa"]');
+                if ('${failedAction}' === 'update' && siso > 0) {
+                    if (khInput) {
+                        khInput.readOnly = true;
+                        khInput.style.background = '#f1f5f9';
+                        khInput.title = 'Không thể sửa Khóa học của lớp đã có sinh viên!';
+                    }
+                    if (mkSelect) {
+                        mkSelect.style.pointerEvents = 'none';
+                        mkSelect.style.background = '#f1f5f9';
+                        mkSelect.title = 'Không thể sửa Khoa của lớp đã có sinh viên!';
+                    }
+                }
+            } else {
+                foundRow.click();
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }
 });
 function filterLopByStatus(filter, btn) {
     currentStatusFilter = filter;
@@ -180,11 +270,86 @@ function btnXoaLop() {
         if (tn === 1) { alert('Không thể xóa lớp đã tốt nghiệp — dữ liệu lịch sử phải được giữ lại.'); return; }
     }
     if (confirm('Bạn có chắc chắn muốn xóa lớp ' + pk.value + '?')) {
+        var nextMaLop = '';
+        if (row) {
+            var nextRow = row.nextElementSibling;
+            if (!nextRow) {
+                nextRow = row.previousElementSibling;
+            }
+            if (nextRow) {
+                nextMaLop = nextRow.getAttribute('data-malop');
+            }
+        }
         var f = document.createElement('form'); f.method = 'POST';
         f.action = '${pageContext.request.contextPath}/lop/delete';
-        var i = document.createElement('input'); i.type='hidden'; i.name='maLop'; i.value=pk.value;
-        f.appendChild(i); document.body.appendChild(f); f.submit();
+        var i = document.createElement('input'); i.type='hidden'; i.name='maLop'; i.value=pk.value.trim(); f.appendChild(i);
+        var i2 = document.createElement('input'); i2.type='hidden'; i2.name='nextMaLop'; i2.value=nextMaLop; f.appendChild(i2);
+        document.body.appendChild(f); f.submit();
     }
+}
+function btnThemLop() {
+    btnThem('lop');
+    // Mở khóa PK — thêm mới cần nhập MALOP
+    var pkF = document.getElementById('lopPK');
+    if (pkF) { pkF.readOnly = false; pkF.style.background = ''; }
+    var khInput = document.querySelector('input[name="khoaHoc"]');
+    var mkSelect = document.querySelector('select[name="maKhoa"]');
+    if (khInput) {
+        khInput.readOnly = false;
+        khInput.style.background = '';
+        khInput.title = '';
+    }
+    if (mkSelect) {
+        mkSelect.style.pointerEvents = '';
+        mkSelect.style.background = '';
+        mkSelect.title = '';
+    }
+    document.getElementById('lopInfoPanel').style.display = 'none';
+    document.getElementById('deleteNote').style.display = 'none';
+    document.getElementById('selectedLopStatus').textContent = 'Đã chọn: Chưa chọn';
+}
+// ===== VALIDATION LỚP =====
+var KHOAHOC_REGEX = /^(\d{4})-(\d{4})$/;
+function lopSetError(inputEl, msg) {
+    var wrapper = inputEl.closest('.pane-input-wrapper') || inputEl.parentElement;
+    inputEl.style.border = '1.5px solid #dc2626';
+    var errId = 'err_lop_' + (inputEl.name || inputEl.id);
+    var existing = document.getElementById(errId);
+    if (existing) existing.remove();
+    var span = document.createElement('span');
+    span.id = errId;
+    span.style.cssText = 'color:#dc2626;font-size:10.5px;font-weight:bold;display:block;margin-top:2px;';
+    span.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + msg;
+    wrapper.appendChild(span);
+}
+function lopClearError(inputEl) {
+    if (!inputEl) return;
+    inputEl.style.border = '';
+    var errId = 'err_lop_' + (inputEl.name || inputEl.id);
+    var existing = document.getElementById(errId);
+    if (existing) existing.remove();
+}
+function validateAndSubmitLop() {
+    var pk = document.getElementById('lopPK');
+    var tenLop = document.querySelector('input[name="tenLop"]');
+    var khoaHoc = document.querySelector('input[name="khoaHoc"]');
+    var maKhoa = document.querySelector('select[name="maKhoa"]');
+    var ok = true;
+    [pk, tenLop, khoaHoc].forEach(function(el) { if (el) lopClearError(el); });
+
+    if (pk && !pk.value.trim()) { lopSetError(pk, 'Mã lớp không được để trống.'); ok = false; }
+    if (!tenLop || !tenLop.value.trim()) { lopSetError(tenLop, 'Tên lớp không được để trống.'); ok = false; }
+    if (khoaHoc && !khoaHoc.readOnly) {
+        var kh = khoaHoc.value.trim();
+        if (!kh) { lopSetError(khoaHoc, 'Khóa học không được để trống.'); ok = false; }
+        else {
+            var m = kh.match(KHOAHOC_REGEX);
+            if (!m) { lopSetError(khoaHoc, 'Khóa học phải có dạng YYYY-YYYY (vd: 2020-2025).'); ok = false; }
+            else if (parseInt(m[2]) <= parseInt(m[1])) { lopSetError(khoaHoc, 'Năm kết thúc phải lớn hơn năm bắt đầu.'); ok = false; }
+        }
+    }
+    if (maKhoa && !maKhoa.value.trim()) { alert('Vui lòng chọn Khoa.'); ok = false; }
+    if (ok) document.getElementById('lopForm').submit();
 }
 </script>
 </body>

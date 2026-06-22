@@ -5,7 +5,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>QLDSV HTC - BÃ¡o cÃ¡o</title>
+    <title>QLDSV HTC - Báo cáo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -139,17 +139,17 @@
                 <i class="fas fa-print"></i> In ngang (A3)
             </button>
             <button class="btn-print-doc" onclick="printPortrait()" style="background:#4caf50; color:#fff;">
-                <i class="fas fa-print"></i> In dá»c (A4)
+                <i class="fas fa-print"></i> In dọc (A4)
             </button>
         </c:when>
         <c:otherwise>
             <button class="btn-print-doc" onclick="window.print()">
-                <i class="fas fa-print"></i> In bÃ¡o cÃ¡o
+                <i class="fas fa-print"></i> In báo cáo
             </button>
         </c:otherwise>
     </c:choose>
     <button class="btn-close-doc" onclick="window.close()">
-        <i class="fas fa-times"></i> ÄÃ³ng
+        <i class="fas fa-times"></i> Đóng
     </button>
 </div>
 
@@ -158,27 +158,27 @@
 <%-- Error display --%>
 <c:if test="${not empty error}">
     <div style="color:#991b1b; background:#fee2e2; border:1px solid #fca5a5; padding:12px; border-radius:4px; font-size:13px;">
-        <i class="fas fa-exclamation-triangle"></i> <strong>Lá»i:</strong> ${error}
+        <i class="fas fa-exclamation-triangle"></i> <strong>Lỗi:</strong> ${error}
     </div>
 </c:if>
 
-<%-- ========== 1. DS Lá»P TÃN CHá» ========== --%>
+<%-- ========== 1. DS LỚP TÍN CHỈ ========== --%>
 <c:if test="${reportType == 'DS_LTC'}">
     <div class="report-title-block">
-        <div class="school-name">Há»c viá»n CÃ´ng nghá» BÆ°u chÃ­nh Viá»n thÃ´ng</div>
-        <h4>Danh sÃ¡ch lá»p tÃ­n chá»</h4>
+        <div class="school-name">Học viện Công nghệ Bưu chính Viễn thông</div>
+        <h4>Danh sách lớp tín chỉ</h4>
         <p class="sub-info"><strong>Khoa:</strong> ${tenKhoa} &nbsp;&mdash;&nbsp;
-           <strong>NiÃªn khÃ³a:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp;
-           <strong>Há»c ká»³:</strong> ${hocky}</p>
+           <strong>Niên khóa:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp;
+           <strong>Học kỳ:</strong> ${hocky}</p>
     </div>
     <table class="report-table">
         <thead><tr>
             <th style="width:40px">STT</th>
-            <th>TÃªn mÃ´n há»c</th>
-            <th style="width:55px">NhÃ³m</th>
-            <th>Giáº£ng viÃªn</th>
-            <th style="width:70px">SV tá»i thiá»u</th>
-            <th style="width:70px">SV ÄÃ£ ÄK</th>
+            <th>Tên môn học</th>
+            <th style="width:55px">Nhóm</th>
+            <th>Giảng viên</th>
+            <th style="width:70px">SV tối thiểu</th>
+            <th style="width:70px">SV đã ĐK</th>
         </tr></thead>
         <tbody>
             <c:forEach items="${data}" var="d" varStatus="st">
@@ -193,52 +193,52 @@
             </c:forEach>
         </tbody>
     </table>
-    <p class="report-footer-stats">Tá»ng sá» lá»p ÄÃ£ má»: <strong>${data.size()}</strong></p>
+    <p class="report-footer-stats">Tổng số lớp đã mở: <strong>${data.size()}</strong></p>
 </c:if>
 
-<%-- ========== 2. DS SV ÄÄNG KÃ LTC ========== --%>
+<%-- ========== 2. DS SV ĐĂNG KÝ LTC ========== --%>
 <c:if test="${reportType == 'DS_SV_DK'}">
     <div class="report-title-block">
-        <div class="school-name">Há»c viá»n CÃ´ng nghá» BÆ°u chÃ­nh Viá»n thÃ´ng</div>
-        <h4>Danh sÃ¡ch sinh viÃªn ÄÄng kÃ½ lá»p tÃ­n chá»</h4>
+        <div class="school-name">Học viện Công nghệ Bưu chính Viễn thông</div>
+        <h4>Danh sách sinh viên đăng ký lớp tín chỉ</h4>
         <p class="sub-info"><strong>Khoa:</strong> ${tenKhoa} &nbsp;&mdash;&nbsp;
-           <strong>NiÃªn khÃ³a:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp;
-           <strong>Há»c ká»³:</strong> ${hocky}</p>
-        <p class="sub-info"><strong>MÃ´n há»c:</strong> ${tenmh} &nbsp;&mdash;&nbsp; <strong>NhÃ³m:</strong> ${nhom}</p>
+           <strong>Niên khóa:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp;
+           <strong>Học kỳ:</strong> ${hocky}</p>
+        <p class="sub-info"><strong>Môn học:</strong> ${tenmh} &nbsp;&mdash;&nbsp; <strong>Nhóm:</strong> ${nhom}</p>
     </div>
     <table class="report-table">
         <thead><tr>
-            <th style="width:40px">STT</th><th>MÃ£ SV</th><th>Há»</th><th>TÃªn</th><th>PhÃ¡i</th><th>MÃ£ lá»p</th>
+            <th style="width:40px">STT</th><th>Mã SV</th><th>Họ</th><th>Tên</th><th>Phái</th><th>Mã lớp</th>
         </tr></thead>
         <tbody>
             <c:forEach items="${data}" var="d" varStatus="st">
                 <tr>
                     <td style="text-align:center">${st.index+1}</td>
                     <td>${d.MASV}</td><td>${d.HO}</td><td>${d.TEN}</td>
-                    <td style="text-align:center">${d.PHAI == true ? 'Ná»¯' : 'Nam'}</td>
+                    <td style="text-align:center">${d.PHAI == true ? 'Nữ' : 'Nam'}</td>
                     <td>${d.MALOP}</td>
                 </tr>
             </c:forEach>
         </tbody>
     </table>
-    <p class="report-footer-stats">Sá» sinh viÃªn ÄÃ£ ÄÄng kÃ½: <strong>${data.size()}</strong></p>
+    <p class="report-footer-stats">Số sinh viên đã đăng ký: <strong>${data.size()}</strong></p>
 </c:if>
 
-<%-- ========== 3. Báº¢NG ÄIá»M Háº¾T MÃN ========== --%>
+<%-- ========== 3. BẢNG ĐIỂM HẾT MÔN ========== --%>
 <c:if test="${reportType == 'BANG_DIEM'}">
     <div class="report-title-block">
-        <div class="school-name">Há»c viá»n CÃ´ng nghá» BÆ°u chÃ­nh Viá»n thÃ´ng</div>
-        <h4>Báº£ng Äiá»m háº¿t mÃ´n</h4>
+        <div class="school-name">Học viện Công nghệ Bưu chính Viễn thông</div>
+        <h4>Bảng điểm hết môn</h4>
         <p class="sub-info"><strong>Khoa:</strong> ${tenKhoa} &nbsp;&mdash;&nbsp;
-           <strong>NiÃªn khÃ³a:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp;
-           <strong>Há»c ká»³:</strong> ${hocky}</p>
-        <p class="sub-info"><strong>MÃ´n há»c:</strong> ${tenmh} &nbsp;&mdash;&nbsp; <strong>NhÃ³m:</strong> ${nhom}</p>
+           <strong>Niên khóa:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp;
+           <strong>Học kỳ:</strong> ${hocky}</p>
+        <p class="sub-info"><strong>Môn học:</strong> ${tenmh} &nbsp;&mdash;&nbsp; <strong>Nhóm:</strong> ${nhom}</p>
     </div>
     <table class="report-table">
         <thead><tr>
-            <th style="width:40px">STT</th><th>MÃ£ SV</th><th>Há»</th><th>TÃªn</th>
-            <th style="width:60px">ÄCC</th><th style="width:60px">ÄGK</th>
-            <th style="width:60px">ÄCK</th><th style="width:80px">Äiá»m háº¿t mÃ´n</th>
+            <th style="width:40px">STT</th><th>Mã SV</th><th>Họ</th><th>Tên</th>
+            <th style="width:60px">ĐCC</th><th style="width:60px">ĐGK</th>
+            <th style="width:60px">ĐCK</th><th style="width:80px">Điểm hết môn</th>
         </tr></thead>
         <tbody>
             <c:forEach items="${data}" var="d" varStatus="st">
@@ -249,42 +249,42 @@
                     <td style="text-align:center">${d.DIEM_GK}</td>
                     <td style="text-align:center">${d.DIEM_CK}</td>
                     <td style="text-align:center; font-weight:bold;">
-                        <c:if test="${d.DIEM_CC != null && d.DIEM_GK != null && d.DIEM_CK != null}">
-                            <fmt:formatNumber value="${d.DIEM_CC * 0.1 + d.DIEM_GK * 0.3 + d.DIEM_CK * 0.6}" maxFractionDigits="1"/>
+                        <c:if test="${d.DIEM_HM != null}">
+                            <fmt:formatNumber value="${d.DIEM_HM}" maxFractionDigits="1"/>
                         </c:if>
                     </td>
                 </tr>
             </c:forEach>
         </tbody>
     </table>
-    <p class="report-footer-stats">Sá» sinh viÃªn: <strong>${data.size()}</strong></p>
+    <p class="report-footer-stats">Số sinh viên: <strong>${data.size()}</strong></p>
 </c:if>
 
-<%-- ========== 4. PHIáº¾U ÄIá»M SV ========== --%>
+<%-- ========== 4. PHIẾU ĐIỂM SV ========== --%>
 <c:if test="${reportType == 'PHIEU_DIEM'}">
     <div class="report-title-block">
-        <div class="school-name">Há»c viá»n CÃ´ng nghá» BÆ°u chÃ­nh Viá»n thÃ´ng</div>
-        <h4>Phiáº¿u Äiá»m sinh viÃªn</h4>
+        <div class="school-name">Học viện Công nghệ Bưu chính Viễn thông</div>
+        <h4>Phiếu điểm sinh viên</h4>
         <c:if test="${svInfo != null}">
-            <p class="sub-info"><strong>MÃ£ SV:</strong> ${svInfo.MASV} &nbsp;&mdash;&nbsp;
-               <strong>Há» tÃªn:</strong> ${svInfo.HO} ${svInfo.TEN}</p>
-            <p class="sub-info"><strong>Lá»p:</strong> ${svInfo.TENLOP} &nbsp;&mdash;&nbsp;
+            <p class="sub-info"><strong>Mã SV:</strong> ${svInfo.MASV} &nbsp;&mdash;&nbsp;
+               <strong>Họ tên:</strong> ${svInfo.HO} ${svInfo.TEN}</p>
+            <p class="sub-info"><strong>Lớp:</strong> ${svInfo.TENLOP} &nbsp;&mdash;&nbsp;
                <strong>Khoa:</strong> ${svInfo.TENKHOA}</p>
         </c:if>
         <c:if test="${phamvi == 'hk' && not empty nienkhoa}">
-            <p class="sub-info"><strong>Pháº¡m vi:</strong> NiÃªn khÃ³a ${nienkhoa} &mdash; Há»c ká»³ ${hocky}</p>
+            <p class="sub-info"><strong>Phạm vi:</strong> Niên khóa ${nienkhoa} &mdash; Học kỳ ${hocky}</p>
         </c:if>
         <c:if test="${phamvi != 'hk'}">
-            <p class="sub-info"><strong>Pháº¡m vi:</strong> ToÃ n khÃ³a há»c</p>
+            <p class="sub-info"><strong>Phạm vi:</strong> Toàn khóa học</p>
         </c:if>
     </div>
     <table class="report-table">
         <thead><tr>
             <th style="width:40px">STT</th>
-            <th>TÃªn mÃ´n há»c</th>
-            <th style="width:80px">Äiá»m (10)</th>
-            <th style="width:60px">Äiá»m chá»¯</th>
-            <th style="width:70px">Há» 4</th>
+            <th>Tên môn học</th>
+            <th style="width:80px">Điểm (10)</th>
+            <th style="width:60px">Điểm chữ</th>
+            <th style="width:70px">Hệ 4</th>
         </tr></thead>
         <tbody>
             <c:forEach items="${data}" var="d" varStatus="st">
@@ -301,17 +301,17 @@
         </tbody>
         <tfoot>
             <tr style="background:#e3eaf7;">
-                <td colspan="2" style="text-align:right; font-weight:bold;">GPA (Há» 4):</td>
+                <td colspan="2" style="text-align:right; font-weight:bold;">GPA (Hệ 4):</td>
                 <td colspan="3" style="text-align:center; font-weight:bold; font-size:14px; color:#1a237e;">
                     ${gpa} &nbsp;&mdash;&nbsp; <em>${xepLoai}</em>
                 </td>
             </tr>
         </tfoot>
     </table>
-    <p class="report-footer-stats">Sá» mÃ´n: <strong>${soMon}</strong> &nbsp;&mdash;&nbsp; GPA: <strong>${gpa}</strong> &nbsp;&mdash;&nbsp; Xáº¿p loáº¡i: <strong>${xepLoai}</strong></p>
+    <p class="report-footer-stats">Số môn: <strong>${soMon}</strong> &nbsp;&mdash;&nbsp; GPA: <strong>${gpa}</strong> &nbsp;&mdash;&nbsp; Xếp loại: <strong>${xepLoai}</strong></p>
 </c:if>
 
-<%-- ========== 5. Báº¢NG ÄIá»M Tá»NG Káº¾T (Cross-Tab) ========== --%>
+<%-- ========== 5. BẢNG ĐIỂM TỔNG KẾT (Cross-Tab) ========== --%>
 <c:if test="${reportType == 'BANG_DIEM_TK'}">
     <div class="report-title-block">
         <div class="school-name">Học viện Công nghệ Bưu chính Viễn thông</div>

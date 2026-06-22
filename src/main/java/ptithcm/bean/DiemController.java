@@ -9,6 +9,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 /**
  * Nhập điểm - PGV nhập/sửa, KHOA xem read-only
@@ -22,12 +25,20 @@ public class DiemController {
     private ConnectionHelper connHelper;
 
     @RequestMapping(method = RequestMethod.GET)
-    public String show(HttpSession session, ModelMap model) {
+    public String show(@RequestParam(value = "nienkhoa", required = false) String nienkhoa,
+                       @RequestParam(value = "hocky", required = false) Integer hocky,
+                       @RequestParam(value = "mamh", required = false) String mamh,
+                       @RequestParam(value = "nhom", required = false) Integer nhom,
+                       HttpSession session, ModelMap model) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) return "redirect:/home";
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         String maKhoa = (String) session.getAttribute("maKhoa");
         reloadDropdowns(jdbc, nhomQuyen, maKhoa, model);
+        
+        if (nienkhoa != null && hocky != null && mamh != null && nhom != null) {
+            executeLoadDiem(nienkhoa, hocky, mamh, nhom, session, model, jdbc, maKhoa, nhomQuyen);
+        }
         return "diem";
     }
 
@@ -39,7 +50,14 @@ public class DiemController {
         if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) return "redirect:/home";
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         String maKhoa = (String) session.getAttribute("maKhoa");
+        
+        executeLoadDiem(nienkhoa, hocky, mamh, nhom, session, model, jdbc, maKhoa, nhomQuyen);
+        return "diem";
+    }
 
+    private void executeLoadDiem(String nienkhoa, int hocky, String mamh, int nhom,
+                                 HttpSession session, ModelMap model, JdbcTemplate jdbc,
+                                 String maKhoa, String nhomQuyen) {
         // Tìm LTC
         List<Map<String, Object>> ltcRows;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
@@ -59,7 +77,7 @@ public class DiemController {
         if (ltcRows.isEmpty()) {
             model.addAttribute("error", "Không tìm thấy lớp tín chỉ!");
             reloadDropdowns(jdbc, nhomQuyen, maKhoa, model);
-            return "diem";
+            return;
         }
 
         Map<String, Object> ltcInfo = ltcRows.get(0);
@@ -105,7 +123,6 @@ public class DiemController {
         model.addAttribute("rot", rot);
         model.addAttribute("tyLeDat", totalSV > 0 && daNhap > 0 ? Math.round(dat * 100.0 / daNhap) : 0);
         reloadDropdowns(jdbc, nhomQuyen, maKhoa, model);
-        return "diem";
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
@@ -126,18 +143,23 @@ public class DiemController {
             // Validate trước
             for (int i = 0; i < masvArr.length; i++) {
                 Double cc = parseDoubleOrNull(diemCCArr[i]), gk = parseDoubleOrNull(diemGKArr[i]), ck = parseDoubleOrNull(diemCKArr[i]);
-                if (cc != null && (cc < 0 || cc > 10)) { ra.addFlashAttribute("error", "Điểm CC SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem"; }
-                if (gk != null && (gk < 0 || gk > 10)) { ra.addFlashAttribute("error", "Điểm GK SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem"; }
-                if (ck != null && (ck < 0 || ck > 10)) { ra.addFlashAttribute("error", "Điểm CK SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem"; }
+                if (cc != null && (cc < 0 || cc > 10)) { ra.addFlashAttribute("error", "Điểm CC SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem?nienkhoa=" + nienkhoa.trim() + "&hocky=" + hocky + "&mamh=" + mamh.trim() + "&nhom=" + nhom; }
+                if (gk != null && (gk < 0 || gk > 10)) { ra.addFlashAttribute("error", "Điểm GK SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem?nienkhoa=" + nienkhoa.trim() + "&hocky=" + hocky + "&mamh=" + mamh.trim() + "&nhom=" + nhom; }
+                if (ck != null && (ck < 0 || ck > 10)) { ra.addFlashAttribute("error", "Điểm CK SV " + masvArr[i] + " phải từ 0-10!"); return "redirect:/diem?nienkhoa=" + nienkhoa.trim() + "&hocky=" + hocky + "&mamh=" + mamh.trim() + "&nhom=" + nhom; }
             }
-            for (int i = 0; i < masvArr.length; i++) {
-                Double cc = parseDoubleOrNull(diemCCArr[i]), gk = parseDoubleOrNull(diemGKArr[i]), ck = parseDoubleOrNull(diemCKArr[i]);
-                jdbc.update("UPDATE DANGKY SET DIEM_CC=?, DIEM_GK=?, DIEM_CK=? WHERE MALTC=? AND MASV=?",
-                    cc, gk, ck, maltc, masvArr[i].trim());
-            }
+            PlatformTransactionManager txManager = new DataSourceTransactionManager(jdbc.getDataSource());
+            TransactionTemplate tx = new TransactionTemplate(txManager);
+            tx.execute(status -> {
+                for (int i = 0; i < masvArr.length; i++) {
+                    Double cc = parseDoubleOrNull(diemCCArr[i]), gk = parseDoubleOrNull(diemGKArr[i]), ck = parseDoubleOrNull(diemCKArr[i]);
+                    jdbc.update("UPDATE DANGKY SET DIEM_CC=?, DIEM_GK=?, DIEM_CK=? WHERE MALTC=? AND MASV=?",
+                        cc, gk, ck, maltc, masvArr[i].trim());
+                }
+                return null;
+            });
             ra.addFlashAttribute("success", "Ghi điểm thành công cho " + masvArr.length + " sinh viên!");
         } catch (Exception e) { ra.addFlashAttribute("error", "Lỗi ghi điểm: " + e.getMessage()); }
-        return "redirect:/diem";
+        return "redirect:/diem?nienkhoa=" + nienkhoa.trim() + "&hocky=" + hocky + "&mamh=" + mamh.trim() + "&nhom=" + nhom;
     }
 
     private void reloadDropdowns(JdbcTemplate jdbc, String nhomQuyen, String maKhoa, ModelMap model) {

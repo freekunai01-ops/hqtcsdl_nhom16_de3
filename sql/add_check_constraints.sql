@@ -1,0 +1,60 @@
+-- Script thêm CHECK constraints vào DB đang chạy (không cần recreate)
+-- Chạy 1 lần trong SSMS với tài khoản sa
+
+USE QLDSV_HTC;
+GO
+
+-- LOPTINCHI: HOCKY phải từ 1 đến 3
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_LOPTINCHI_HOCKY')
+    ALTER TABLE LOPTINCHI
+    ADD CONSTRAINT CHK_LOPTINCHI_HOCKY CHECK (HOCKY BETWEEN 1 AND 3);
+GO
+
+-- LOPTINCHI: NHOM phải >= 1
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_LOPTINCHI_NHOM')
+    ALTER TABLE LOPTINCHI
+    ADD CONSTRAINT CHK_LOPTINCHI_NHOM CHECK (NHOM >= 1);
+GO
+
+-- LOPTINCHI: SOSVTOITHIEU phải > 0
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_LOPTINCHI_SOSVTOITHIEU')
+    ALTER TABLE LOPTINCHI
+    ADD CONSTRAINT CHK_LOPTINCHI_SOSVTOITHIEU CHECK (SOSVTOITHIEU > 0);
+GO
+
+-- LOPTINCHI: SOSVTOIDA phải >= SOSVTOITHIEU
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_LOPTINCHI_SOSVTOIDA')
+    ALTER TABLE LOPTINCHI
+    ADD CONSTRAINT CHK_LOPTINCHI_SOSVTOIDA CHECK (SOSVTOIDA >= SOSVTOITHIEU);
+GO
+
+-- DANGKY: Điểm chuyên cần 0-10 (hoặc NULL)
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_DANGKY_DIEM_CC')
+    ALTER TABLE DANGKY
+    ADD CONSTRAINT CHK_DANGKY_DIEM_CC CHECK (DIEM_CC IS NULL OR (DIEM_CC >= 0 AND DIEM_CC <= 10));
+GO
+
+-- DANGKY: Điểm giữa kỳ 0-10 (hoặc NULL)
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_DANGKY_DIEM_GK')
+    ALTER TABLE DANGKY
+    ADD CONSTRAINT CHK_DANGKY_DIEM_GK CHECK (DIEM_GK IS NULL OR (DIEM_GK >= 0 AND DIEM_GK <= 10));
+GO
+
+-- DANGKY: Điểm cuối kỳ 0-10 (hoặc NULL)
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_DANGKY_DIEM_CK')
+    ALTER TABLE DANGKY
+    ADD CONSTRAINT CHK_DANGKY_DIEM_CK CHECK (DIEM_CK IS NULL OR (DIEM_CK >= 0 AND DIEM_CK <= 10));
+GO
+
+PRINT N'Đã thêm CHECK constraints thành công!';
+
+-- Xác minh kết quả
+SELECT 
+    t.name AS BangDuLieu,
+    cc.name AS TenConstraint,
+    cc.definition AS DinhNghia
+FROM sys.check_constraints cc
+JOIN sys.tables t ON cc.parent_object_id = t.object_id
+WHERE t.name IN ('LOPTINCHI', 'DANGKY')
+ORDER BY t.name, cc.name;
+GO

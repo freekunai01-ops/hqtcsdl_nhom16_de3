@@ -18,7 +18,8 @@ public class GiangVienController {
     private ConnectionHelper connHelper;
 
     @RequestMapping(method = RequestMethod.GET)
-    public String show(HttpSession session, ModelMap model) {
+    public String show(@RequestParam(value = "magv", required = false) String magv,
+                       HttpSession session, ModelMap model) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) {
             return "redirect:/home";
@@ -50,6 +51,7 @@ public class GiangVienController {
         model.addAttribute("gsPgsTs", gsPgsTs);
         model.addAttribute("chuaPC", chuaPC);
         model.addAttribute("khoaList", jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
+        model.addAttribute("selectedMagv", magv != null ? magv.trim() : "");
         return "giangvien";
     }
 
@@ -61,14 +63,24 @@ public class GiangVienController {
                        HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         if (magv == null || magv.trim().isEmpty()) { ra.addFlashAttribute("error", "Mã GV không được bỏ trống!"); return "redirect:/giangvien"; }
-        if (ho == null || ho.trim().isEmpty()) { ra.addFlashAttribute("error", "Họ không được bỏ trống!"); return "redirect:/giangvien"; }
-        if (ten == null || ten.trim().isEmpty()) { ra.addFlashAttribute("error", "Tên không được bỏ trống!"); return "redirect:/giangvien"; }
+        
+        ra.addFlashAttribute("failedAction", action);
+        ra.addFlashAttribute("failedMagv", magv);
+        ra.addFlashAttribute("failedHo", ho);
+        ra.addFlashAttribute("failedTen", ten);
+        ra.addFlashAttribute("failedHocvi", hocvi);
+        ra.addFlashAttribute("failedHocham", hocham);
+        ra.addFlashAttribute("failedChuyenmon", chuyenmon);
+        ra.addFlashAttribute("failedMaKhoa", maKhoa);
+
+        if (ho == null || ho.trim().isEmpty()) { ra.addFlashAttribute("error", "Họ không được bỏ trống!"); return "redirect:/giangvien?magv=" + magv.trim(); }
+        if (ten == null || ten.trim().isEmpty()) { ra.addFlashAttribute("error", "Tên không được bỏ trống!"); return "redirect:/giangvien?magv=" + magv.trim(); }
 
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
             if ("add".equals(action)) {
                 int exists = jdbc.queryForObject("SELECT COUNT(*) FROM GIANGVIEN WHERE MAGV=?", Integer.class, magv.trim());
-                if (exists > 0) { ra.addFlashAttribute("error", "Mã GV '" + magv.trim() + "' đã tồn tại!"); return "redirect:/giangvien"; }
+                if (exists > 0) { ra.addFlashAttribute("error", "Mã GV '" + magv.trim() + "' đã tồn tại!"); return "redirect:/giangvien?magv=" + magv.trim(); }
                 jdbc.update("INSERT INTO GIANGVIEN (MAGV,HO,TEN,HOCVI,HOCHAM,CHUYENMON,MAKHOA) VALUES (?,?,?,?,?,?,?)",
                         magv.trim(), ho.trim(), ten.trim(), hocvi.trim(), hocham.trim(), chuyenmon.trim(), maKhoa.trim());
                 ra.addFlashAttribute("success", "Thêm giảng viên thành công!");
@@ -77,25 +89,33 @@ public class GiangVienController {
                         ho.trim(), ten.trim(), hocvi.trim(), hocham.trim(), chuyenmon.trim(), maKhoa.trim(), magv.trim());
                 ra.addFlashAttribute("success", "Cập nhật giảng viên thành công!");
             }
-        } catch (Exception e) { ra.addFlashAttribute("error", "Lỗi: " + e.getMessage()); }
-        return "redirect:/giangvien";
+        } catch (Exception e) { 
+            ra.addFlashAttribute("error", "Lỗi: " + e.getMessage()); 
+            return "redirect:/giangvien?magv=" + magv.trim();
+        }
+        return "redirect:/giangvien?magv=" + magv.trim();
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam String magv, HttpSession session, RedirectAttributes ra) {
+    public String delete(@RequestParam String magv,
+                         @RequestParam(required = false) String nextMagv,
+                         HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
             int ltcCount = jdbc.queryForObject("SELECT COUNT(*) FROM LOPTINCHI WHERE MAGV=?", Integer.class, magv.trim());
             if (ltcCount > 0) {
                 ra.addFlashAttribute("error", "Không thể xóa! GV '" + magv.trim() + "' đã phụ trách " + ltcCount + " lớp tín chỉ.");
-                return "redirect:/giangvien";
+                return "redirect:/giangvien?magv=" + magv.trim();
             }
         } catch (Exception e) {}
         try {
             jdbc.update("DELETE FROM GIANGVIEN WHERE MAGV=?", magv.trim());
             ra.addFlashAttribute("success", "Xóa giảng viên thành công!");
-        } catch (Exception e) { ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage()); }
-        return "redirect:/giangvien";
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());
+            return "redirect:/giangvien?magv=" + magv.trim();
+        }
+        return "redirect:/giangvien" + (nextMagv != null && !nextMagv.trim().isEmpty() ? "?magv=" + nextMagv.trim() : "");
     }
 }

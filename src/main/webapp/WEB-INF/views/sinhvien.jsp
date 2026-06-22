@@ -122,7 +122,8 @@
                                     </tr></thead>
                                     <tbody>
                                         <c:forEach items="${dssv}" var="sv">
-                                            <tr data-danghihoc="${sv.DANGHIHOC}" data-luotdk="${sv.LUOT_DK}">
+                                            <tr data-danghihoc="${sv.DANGHIHOC}" data-luotdk="${sv.LUOT_DK}"
+                                                class="${sv.MASV.trim() == selectedMasv ? 'selected' : ''}">
                                                 <td data-col="MASV">${sv.MASV}</td>
                                                 <td>${sv.HO} ${sv.TEN}<span style="display:none" data-col="HO">${sv.HO}</span><span style="display:none" data-col="TEN">${sv.TEN}</span></td>
                                                 <td data-col="PHAI">${sv.PHAI == true ? 'Nữ' : 'Nam'}</td>
@@ -143,12 +144,12 @@
                                     <input type="hidden" name="malop" value="${selectedLop}">
                                 </c:if>
                                 <div class="pane-grid">
-                                    <div class="pane-row"><span class="pane-label">Mã SV:</span><div class="pane-input-wrapper"><input type="text" id="svPK" name="masv" data-field="MASV" class="pane-input" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div><span class="pane-label" style="margin-left:20px;">Mã lớp:</span><div class="pane-input-wrapper"><select name="malop" data-field="MALOP" class="pane-input" style="padding:4px 6px;" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>><c:forEach items="${dslop}" var="l"><option value="${l.MALOP}" ${l.MALOP.trim() == selectedLop ? 'selected' : ''}>${l.MALOP}</option></c:forEach></select></div></div>
-                                    <div class="pane-row"><span class="pane-label">Họ:</span><div class="pane-input-wrapper"><input type="text" name="ho" data-field="HO" class="pane-input" maxlength="50" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div><span class="pane-label" style="margin-left:20px;">Tên:</span><div class="pane-input-wrapper"><input type="text" name="ten" data-field="TEN" class="pane-input" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                    <div class="pane-row"><span class="pane-label">Phái:</span><div class="pane-input-wrapper" style="display:flex;gap:15px;align-items:center;"><label style="font-size:12px;cursor:pointer;"><input type="radio" name="phai" id="phaiNam" value="false" checked <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>> Nam</label><label style="font-size:12px;cursor:pointer;"><input type="radio" name="phai" id="phaiNu" value="true" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>> Nữ</label></div><span class="pane-label" style="margin-left:20px;">Ngày sinh:</span><div class="pane-input-wrapper"><input type="date" name="ngaysinh" data-field="NGAYSINH" class="pane-input" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
-                                    <div class="pane-row"><span class="pane-label">Địa chỉ:</span><div class="pane-input-wrapper" style="flex:1;"><input type="text" name="diachi" data-field="DIACHI" class="pane-input" maxlength="100" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                    <div class="pane-row"><span class="pane-label">Mã SV:</span><div class="pane-input-wrapper"><input type="text" id="svPK" name="masv" data-field="MASV" class="pane-input" value="${not empty error ? failedMasv : ''}" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div><span class="pane-label" style="margin-left:20px;">Mã lớp:</span><div class="pane-input-wrapper"><select name="malop" data-field="MALOP" class="pane-input" style="padding:4px 6px;" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>><c:forEach items="${dslop}" var="l"><option value="${l.MALOP}" ${not empty error ? (failedMalop == l.MALOP ? 'selected' : '') : (l.MALOP.trim() == selectedLop ? 'selected' : '')}>${l.MALOP}</option></c:forEach></select></div></div>
+                                    <div class="pane-row"><span class="pane-label">Họ:</span><div class="pane-input-wrapper"><input type="text" name="ho" data-field="HO" class="pane-input" value="${not empty error ? failedHo : ''}" maxlength="50" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div><span class="pane-label" style="margin-left:20px;">Tên:</span><div class="pane-input-wrapper"><input type="text" name="ten" data-field="TEN" class="pane-input" value="${not empty error ? failedTen : ''}" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                    <div class="pane-row"><span class="pane-label">Phái:</span><div class="pane-input-wrapper" style="display:flex;gap:15px;align-items:center;"><label style="font-size:12px;cursor:pointer;"><input type="radio" name="phai" id="phaiNam" value="false" ${not empty error ? (failedPhai == false ? 'checked' : '') : 'checked'} <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>> Nam</label><label style="font-size:12px;cursor:pointer;"><input type="radio" name="phai" id="phaiNu" value="true" ${not empty error && failedPhai == true ? 'checked' : ''} <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>> Nữ</label></div><span class="pane-label" style="margin-left:20px;">Ngày sinh:</span><div class="pane-input-wrapper"><input type="date" name="ngaysinh" data-field="NGAYSINH" class="pane-input" value="${not empty error ? failedNgaysinh : ''}" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
+                                    <div class="pane-row"><span class="pane-label">Địa chỉ:</span><div class="pane-input-wrapper" style="flex:1;"><input type="text" name="diachi" data-field="DIACHI" class="pane-input" value="${not empty error ? failedDiachi : ''}" maxlength="100" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
                                     <c:if test="${sessionScope.nhomQuyen == 'PGV'}">
-                                    <div class="pane-row"><span class="pane-label"></span><div class="pane-input-wrapper"><label style="font-size:12px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="svDangNghiHoc" name="danghihoc" value="true"> Đang nghỉ học (DANGHIHOC) <span id="svBadge" class="badge-status badge-danghoc">Đang học</span></label></div></div>
+                                    <div class="pane-row"><span class="pane-label"></span><div class="pane-input-wrapper"><label style="font-size:12px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:6px;"><input type="checkbox" id="svDangNghiHoc" name="danghihoc" value="true" ${not empty error && failedDanghihoc == true ? 'checked' : ''}> Đang nghỉ học (DANGHIHOC) <span id="svBadge" class="badge-status badge-danghoc">Đang học</span></label></div></div>
                                     </c:if>
                                 </div>
                             </form>
@@ -165,7 +166,7 @@
                     <c:if test="${sessionScope.nhomQuyen == 'PGV'}">
                         <button type="button" class="win-form-btn" onclick="btnThemSV()"><i class="fas fa-plus"></i> Thêm</button>
                         <button type="button" class="win-form-btn btn-delete" onclick="btnXoaSV()"><i class="fas fa-trash"></i> Xóa</button>
-                        <button type="button" class="win-form-btn btn-save" onclick="document.getElementById('svForm').submit()"><i class="fas fa-save"></i> Ghi</button>
+                        <button type="button" class="win-form-btn btn-save" onclick="validateAndSubmitSV()"><i class="fas fa-save"></i> Ghi</button>
                         <button type="button" class="win-form-btn" onclick="btnPhucHoi()"><i class="fas fa-undo"></i> Phục hồi</button>
                     </c:if>
                     <button type="button" class="win-form-btn" onclick="btnThoat('${pageContext.request.contextPath}/home')"><i class="fas fa-sign-out-alt"></i> Thoát</button>
@@ -179,7 +180,7 @@
     </main>
 </div>
 </div>
-<script src="${pageContext.request.contextPath}/js/app.js?v=3"></script>
+<script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     var table = document.getElementById('svTable'); if (!table) return;
@@ -206,6 +207,47 @@ document.addEventListener("DOMContentLoaded", function() {
         var b = document.getElementById('svBadge');
         if(b) { if(this.checked){b.className='badge-status badge-nghihoc';b.textContent='Nghỉ học';}else{b.className='badge-status badge-danghoc';b.textContent='Đang học';} }
     });
+
+    var activeMasv = '${selectedMasv}';
+    if (activeMasv) {
+        var foundRow = null;
+        rows.forEach(function(row) {
+            var cell = row.querySelector('[data-col="MASV"]');
+            if (cell && cell.textContent.trim() === activeMasv) {
+                foundRow = row;
+            }
+        });
+        if (foundRow) {
+            var hasError = ${not empty error};
+            if (hasError) {
+                foundRow.classList.add('selected');
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                
+                // Restore action state
+                document.getElementById('svAction').value = '${failedAction}';
+                // Configure fields readOnly/disabled state based on action
+                var pkField = document.getElementById('svPK');
+                if (pkField && '${failedAction}' === 'update') {
+                    pkField.readOnly = true;
+                    pkField.style.background = '#f1f5f9';
+                }
+                var b = document.getElementById('svBadge');
+                if (b) {
+                    var dnh = '${failedDanghihoc}';
+                    if (dnh === 'true') {
+                        b.className = 'badge-status badge-nghihoc';
+                        b.textContent = 'Nghỉ học';
+                    } else {
+                        b.className = 'badge-status badge-danghoc';
+                        b.textContent = 'Đang học';
+                    }
+                }
+            } else {
+                foundRow.click();
+                foundRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }
 });
 function btnThemSV() {
     var pk=document.getElementById('svPK'); if(pk){pk.value='';pk.readOnly=false;pk.focus();}
@@ -221,9 +263,21 @@ function btnXoaSV() {
     var row=document.querySelector('#svTable tbody tr.selected');
     if(row){var dk=row.getAttribute('data-luotdk');if(dk&&parseInt(dk)>0){alert('Không thể xóa! SV '+pk.value+' đã có '+dk+' lượt đăng ký.\nDùng "Đang nghỉ học" thay vì xóa.');return;}}
     if(confirm('Xóa sinh viên '+pk.value+'?')){
+        var nextMasv = '';
+        if (row) {
+            var nextRow = row.nextElementSibling;
+            if (!nextRow) {
+                nextRow = row.previousElementSibling;
+            }
+            if (nextRow) {
+                var cell = nextRow.querySelector('[data-col="MASV"]');
+                if (cell) nextMasv = cell.textContent.trim();
+            }
+        }
         var f=document.createElement('form');f.method='POST';f.action='${pageContext.request.contextPath}/sinhvien/delete';
         var i1=document.createElement('input');i1.type='hidden';i1.name='masv';i1.value=pk.value.trim();f.appendChild(i1);
         var i2=document.createElement('input');i2.type='hidden';i2.name='malop';i2.value='${selectedLop}';f.appendChild(i2);
+        var i3=document.createElement('input');i3.type='hidden';i3.name='nextMasv';i3.value=nextMasv;f.appendChild(i3);
         document.body.appendChild(f);f.submit();
     }
 }
@@ -267,6 +321,53 @@ function applyLopFilter() {
             row.style.display = 'none';
         }
     });
+}
+// ===== VALIDATION SINH VIÊN =====
+var NAME_REGEX = /^[A-Za-zÀ-ỹà-ỹĂăÂâĐđÊêÔôƠơƯưÁáÀàẢảÃãẠạẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặÉéÈèẺẻẼẽẸẹẾếỀềỂểỄễỆệÍíÌìỈỉĨĩỊịÓóÒòỎỏÕõỌọỐốỒồổỔỗỖộỘỚớỜờỞởỠỡỢợÚúÙùỦủŨũỤụỨứỪừỬửỮữỰựÝýỲỳỶỷỸỹỴỵ\s]+$/;
+function svSetError(inputEl, msg) {
+    var wrapper = inputEl.closest('.pane-input-wrapper') || inputEl.parentElement;
+    inputEl.style.border = '1.5px solid #dc2626';
+    var errId = 'err_' + (inputEl.name || inputEl.id);
+    var existing = document.getElementById(errId);
+    if (existing) existing.remove();
+    var span = document.createElement('span');
+    span.id = errId;
+    span.style.cssText = 'color:#dc2626;font-size:10.5px;font-weight:bold;display:block;margin-top:2px;';
+    span.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + msg;
+    wrapper.appendChild(span);
+}
+function svClearError(inputEl) {
+    inputEl.style.border = '';
+    var errId = 'err_' + (inputEl.name || inputEl.id);
+    var existing = document.getElementById(errId);
+    if (existing) existing.remove();
+}
+function validateAndSubmitSV() {
+    var ho = document.querySelector('input[name="ho"]');
+    var ten = document.querySelector('input[name="ten"]');
+    var ns = document.querySelector('input[name="ngaysinh"]');
+    var masv = document.getElementById('svPK');
+    var ok = true;
+    // Reset tất cả
+    [ho, ten, ns, masv].forEach(function(el) { if(el) svClearError(el); });
+
+    if (masv && !masv.value.trim()) { svSetError(masv, 'Mã SV không được để trống.'); ok = false; }
+    if (!ho || !ho.value.trim()) { svSetError(ho, 'Họ không được để trống.'); ok = false; }
+    else if (!NAME_REGEX.test(ho.value.trim())) { svSetError(ho, 'Họ không được chứa số hoặc ký tự đặc biệt.'); ok = false; }
+    if (!ten || !ten.value.trim()) { svSetError(ten, 'Tên không được để trống.'); ok = false; }
+    else if (!NAME_REGEX.test(ten.value.trim())) { svSetError(ten, 'Tên không được chứa số hoặc ký tự đặc biệt.'); ok = false; }
+    if (ns) {
+        if (!ns.value) { svSetError(ns, 'Ngày sinh không được để trống.'); ok = false; }
+        else {
+            var born = new Date(ns.value);
+            var today = new Date(); today.setHours(0,0,0,0);
+            var age = today.getFullYear() - born.getFullYear() - (today < new Date(today.getFullYear(), born.getMonth(), born.getDate()) ? 1 : 0);
+            if (born >= today) { svSetError(ns, 'Ngày sinh không được lớn hơn ngày hiện tại.'); ok = false; }
+            else if (age < 16) { svSetError(ns, 'Sinh viên phải từ 16 tuổi trở lên.'); ok = false; }
+            else if (age > 60) { svSetError(ns, 'Tuổi sinh viên không hợp lệ (trên 60 tuổi).'); ok = false; }
+        }
+    }
+    if (ok) document.getElementById('svForm').submit();
 }
 </script>
 </body>
