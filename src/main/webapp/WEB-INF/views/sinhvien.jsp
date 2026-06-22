@@ -139,7 +139,9 @@
                             <div class="pane-title" style="margin-top:10px;">Chi tiết sinh viên</div>
                             <form id="svForm" action="${pageContext.request.contextPath}/sinhvien/save" method="post">
                                 <input type="hidden" id="svAction" name="action" value="add">
-                                <input type="hidden" name="malop" value="${selectedLop}">
+                                <c:if test="${sessionScope.nhomQuyen != 'PGV'}">
+                                    <input type="hidden" name="malop" value="${selectedLop}">
+                                </c:if>
                                 <div class="pane-grid">
                                     <div class="pane-row"><span class="pane-label">Mã SV:</span><div class="pane-input-wrapper"><input type="text" id="svPK" name="masv" data-field="MASV" class="pane-input" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div><span class="pane-label" style="margin-left:20px;">Mã lớp:</span><div class="pane-input-wrapper"><select name="malop" data-field="MALOP" class="pane-input" style="padding:4px 6px;" <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>><c:forEach items="${dslop}" var="l"><option value="${l.MALOP}" ${l.MALOP.trim() == selectedLop ? 'selected' : ''}>${l.MALOP}</option></c:forEach></select></div></div>
                                     <div class="pane-row"><span class="pane-label">Họ:</span><div class="pane-input-wrapper"><input type="text" name="ho" data-field="HO" class="pane-input" maxlength="50" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div><span class="pane-label" style="margin-left:20px;">Tên:</span><div class="pane-input-wrapper"><input type="text" name="ten" data-field="TEN" class="pane-input" maxlength="10" required <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>></div></div>
