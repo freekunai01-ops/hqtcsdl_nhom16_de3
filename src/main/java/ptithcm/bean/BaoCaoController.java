@@ -148,7 +148,7 @@ public class BaoCaoController {
                             "SELECT SV.MASV, SV.HO, SV.TEN, SV.PHAI, SV.MALOP " +
                             "FROM DANGKY DK JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
                             "WHERE DK.MALTC=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                            "ORDER BY SV.TEN, SV.HO", maltc);
+                            "ORDER BY SV.MASV", maltc);
                     model.addAttribute("data", data);
                     model.addAttribute("tenmh", tenmh);
                 }
@@ -173,7 +173,7 @@ public class BaoCaoController {
                             "dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK) AS DIEM_HM " +
                             "FROM DANGKY DK JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
                             "WHERE DK.MALTC=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                            "ORDER BY SV.TEN, SV.HO", maltc);
+                            "ORDER BY SV.MASV", maltc);
                     model.addAttribute("data", data);
                     model.addAttribute("tenmh", tenmh);
                 }
@@ -305,7 +305,7 @@ public class BaoCaoController {
                     }
 
                     List<Map<String, Object>> dssv = jdbc.queryForList(
-                            "SELECT MASV, HO + ' ' + TEN AS HOTENSV FROM SINHVIEN WHERE MALOP=? ORDER BY TEN, HO",
+                            "SELECT MASV, HO + ' ' + TEN AS HOTENSV FROM SINHVIEN WHERE MALOP=? ORDER BY MASV",
                             malop.trim());
 
                     model.addAttribute("lopInfo", lopInfo.get(0));
