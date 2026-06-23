@@ -469,7 +469,7 @@
                                                                 onclick="btnXoaOpen()"><i class="fas fa-trash"></i>
                                                                 Xóa</button>
                                                             <button type="button" class="win-form-btn btn-save"
-                                                                id="btnGhiSubmit" onclick="submitForm()"><i
+                                                                id="btnGhiSubmit"><i
                                                                     class="fas fa-save"></i> Ghi</button>
                                                             <button type="button" class="win-form-btn"
                                                                 onclick="btnPhucHoi()"><i class="fas fa-undo"></i> Phục

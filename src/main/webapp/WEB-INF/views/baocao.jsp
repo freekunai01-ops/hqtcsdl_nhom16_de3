@@ -409,27 +409,22 @@
                                         </div>
                                         <table class="preview-table">
                                             <thead><tr>
-                                                <th style="width:35px;">STT</th><th>Mã SV</th><th>Họ tên</th><th>Lớp</th>
-                                                <th style="width:50px;text-align:center;">CC</th><th style="width:50px;text-align:center;">GK</th>
-                                                <th style="width:50px;text-align:center;">CK</th><th style="width:55px;text-align:center;">HM</th>
-                                                <th style="width:45px;text-align:center;">Chữ</th><th style="width:45px;text-align:center;">Hệ 4</th>
+                                                <th style="width:35px;">STT</th><th>Mã SV</th><th>Họ</th><th>Tên</th>
+                                                <th style="width:80px;text-align:center;">Điểm chuyên cần</th>
+                                                <th style="width:70px;text-align:center;">Điểm giữa kỳ</th>
+                                                <th style="width:70px;text-align:center;">Điểm cuối kỳ</th>
+                                                <th style="width:80px;text-align:center;">Điểm hết môn</th>
                                             </tr></thead>
                                             <tbody>
                                                 <c:forEach items="${data}" var="d" varStatus="st">
-                                                    <c:set var="hm" value="${d.DIEM_CC != null && d.DIEM_GK != null && d.DIEM_CK != null ? d.DIEM_CC * 0.1 + d.DIEM_GK * 0.3 + d.DIEM_CK * 0.6 : -1}"/>
                                                     <tr>
                                                         <td style="text-align:center;">${st.index+1}</td>
-                                                        <td>${d.MASV}</td><td>${d.HO} ${d.TEN}</td><td>${d.MALOP}</td>
-                                                        <td style="text-align:center;">${d.DIEM_CC}</td><td style="text-align:center;">${d.DIEM_GK}</td>
+                                                        <td>${d.MASV}</td><td>${d.HO}</td><td>${d.TEN}</td>
+                                                        <td style="text-align:center;">${d.DIEM_CC}</td>
+                                                        <td style="text-align:center;">${d.DIEM_GK}</td>
                                                         <td style="text-align:center;">${d.DIEM_CK}</td>
-                                                        <td style="text-align:center;font-weight:bold;color:${hm >= 5 ? '#16a34a' : (hm >= 0 ? '#dc2626' : '#94a3b8')};">
-                                                            <c:if test="${hm >= 0}"><fmt:formatNumber value="${hm}" maxFractionDigits="2"/></c:if>
-                                                        </td>
-                                                        <td style="text-align:center;font-weight:bold;color:#1e40af;">
-                                                            <c:if test="${hm >= 9}">A+</c:if><c:if test="${hm >= 8.5 && hm < 9}">A</c:if><c:if test="${hm >= 8 && hm < 8.5}">B+</c:if><c:if test="${hm >= 7 && hm < 8}">B</c:if><c:if test="${hm >= 6.5 && hm < 7}">C+</c:if><c:if test="${hm >= 5.5 && hm < 6.5}">C</c:if><c:if test="${hm >= 5 && hm < 5.5}">D+</c:if><c:if test="${hm >= 4 && hm < 5}">D</c:if><c:if test="${hm >= 0 && hm < 4}">F</c:if>
-                                                        </td>
-                                                        <td style="text-align:center;">
-                                                            <c:if test="${hm >= 9}">4.0</c:if><c:if test="${hm >= 8.5 && hm < 9}">3.7</c:if><c:if test="${hm >= 8 && hm < 8.5}">3.5</c:if><c:if test="${hm >= 7 && hm < 8}">3.0</c:if><c:if test="${hm >= 6.5 && hm < 7}">2.5</c:if><c:if test="${hm >= 5.5 && hm < 6.5}">2.0</c:if><c:if test="${hm >= 5 && hm < 5.5}">1.5</c:if><c:if test="${hm >= 4 && hm < 5}">1.0</c:if><c:if test="${hm >= 0 && hm < 4}">0.0</c:if>
+                                                        <td style="text-align:center;font-weight:bold;">
+                                                            <c:if test="${d.DIEM_HM != null}"><fmt:formatNumber value="${d.DIEM_HM}" maxFractionDigits="1"/></c:if>
                                                         </td>
                                                     </tr>
                                                 </c:forEach>
@@ -451,9 +446,7 @@
                                                 <tr>
                                                     <th style="width: 50px;">STT</th>
                                                     <th>Tên môn học</th>
-                                                    <th style="width: 100px; text-align: center;">Điểm (thang 10)</th>
-                                                    <th style="width: 80px; text-align: center;">Điểm chữ</th>
-                                                    <th style="width: 80px; text-align: center;">Thang 4</th>
+                                                    <th style="width: 100px; text-align: center;">Điểm</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -462,26 +455,13 @@
                                                         <td style="text-align: center;">${st.index + 1}</td>
                                                         <td>${d.TENMH}</td>
                                                         <td style="text-align: center; font-weight: bold;">
-                                                            <fmt:formatNumber value="${d.DIEM}" maxFractionDigits="2"/>
+                                                            <fmt:formatNumber value="${d.DIEM}" maxFractionDigits="1"/>
                                                         </td>
-                                                        <td style="text-align: center; font-weight: bold;">${d.DIEMCHU}</td>
-                                                        <td style="text-align: center;">${d.THANG4}</td>
                                                     </tr>
                                                 </c:forEach>
                                             </tbody>
                                         </table>
-                                        <div style="margin-top:15px; padding:12px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; font-size:13px; font-family:sans-serif;">
-                                             <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:10px;">
-                                                 <div><span style="color:#64748b;">Tổng số môn:</span> <strong style="font-size:14px;color:#1e293b;">${soMon} môn</strong></div>
-                                                 <div><span style="color:#64748b;">Tổng số tín chỉ:</span> <strong style="font-size:14px;color:#1e293b;">${soMon * 3} TC</strong></div>
-                                                 <div><span style="color:#64748b;">GPA tích lũy:</span> <strong style="font-size:14px;color:#2563eb;">${gpa}</strong></div>
-                                                 <div><span style="color:#64748b;">Xếp loại:</span> <strong style="font-size:14px;color:#16a34a;">${xepLoai}</strong></div>
-                                             </div>
-                                             <div style="border-top:1px dashed #e2e8f0; padding-top:8px; display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#64748b;">
-                                                 <span>Trạng thái: <strong>${phamvi == 'hk' ? 'Đang cập nhật theo học kỳ' : 'Đã tốt nghiệp (Đủ điều kiện)'}</strong></span>
-                                                 <span style="font-style:italic;">* Ghi chú: Bản xem trước. Bảng điểm tự động ngắt trang khi in nếu có nhiều môn học.</span>
-                                             </div>
-                                         </div>
+                                        <p style="margin-top:10px; font-size:13px;">Số môn: <strong>${soMon}</strong></p>
                                     </c:if>
 
                                     <%-- 5. BẢNG ĐIỂM TỔNG KẾT --%>
@@ -507,25 +487,45 @@
                                                     <th style="min-width:170px;text-align:left;position:sticky;left:0;background:#f1f5f9;z-index:1;">MASV - Họ tên</th>
                                                     <c:forEach items="${dsmhCross}" var="mh">
                                                         <th style="text-align:center;padding:4px;min-width:45px;">
-                                                            <div style="writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap;margin:4px auto;font-size:10px;font-weight:bold;color:#1e40af;" title="${mh.TENMH}">${mh.MAMH}</div>
+                                                            <div style="writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap;margin:4px auto;font-size:10px;font-weight:bold;color:#1e40af;" title="${mh.MAMH}">${mh.TENMH}</div>
                                                         </th>
                                                     </c:forEach>
+                                                    <th style="text-align:center;min-width:40px;background:#eef2ff;">GPA</th>
+                                                    <th style="text-align:center;min-width:65px;background:#f0fdf4;">Xếp loại</th>
                                                 </tr></thead>
                                                 <tbody>
                                                     <c:forEach items="${dssv}" var="sv">
                                                         <tr>
                                                             <td style="position:sticky;left:0;background:#fff;z-index:1;white-space:nowrap;"><strong>${sv.MASV}</strong> - ${sv.HOTENSV}</td>
                                                             <c:forEach items="${dsmhCross}" var="mh">
+                                                                <c:set var="cellKey" value="${fn:trim(sv.MASV)}_${fn:trim(mh.MAMH)}"/>
+                                                                <c:set var="cellDiem" value="${diemMap[cellKey]}"/>
                                                                 <td style="text-align:center;">
-                                                                    <c:forEach items="${diemData}" var="dd">
-                                                                        <c:if test="${dd.MASV.trim() == sv.MASV.trim() && dd.MAMH.trim() == mh.MAMH.trim()}">
-                                                                            <span style="font-weight:bold;color:${dd.DIEM >= 5 ? '#16a34a' : '#dc2626'};">
-                                                                                <fmt:formatNumber value="${dd.DIEM}" maxFractionDigits="1"/>
+                                                                    <c:choose>
+                                                                        <c:when test="${not empty cellDiem}">
+                                                                            <span style="font-weight:bold;color:${cellDiem >= 5 ? '#16a34a' : '#dc2626'};">
+                                                                                <fmt:formatNumber value="${cellDiem}" maxFractionDigits="1"/>
                                                                             </span>
-                                                                        </c:if>
-                                                                    </c:forEach>
+                                                                        </c:when>
+                                                                        <c:otherwise><span style="color:#cbd5e1;">-</span></c:otherwise>
+                                                                    </c:choose>
                                                                 </td>
                                                             </c:forEach>
+                                                            <c:set var="svMasv" value="${fn:trim(sv.MASV)}"/>
+                                                            <c:set var="svGpa" value="${gpaMap[svMasv]}"/>
+                                                            <c:set var="svRank" value="${rankMap[svMasv]}"/>
+                                                            <td style="text-align:center;font-weight:bold;color:#1e40af;background:#eef2ff;">
+                                                                <c:choose>
+                                                                    <c:when test="${not empty svGpa}"><fmt:formatNumber value="${svGpa}" maxFractionDigits="2"/></c:when>
+                                                                    <c:otherwise>-</c:otherwise>
+                                                                </c:choose>
+                                                            </td>
+                                                            <td style="text-align:center;font-weight:bold;font-size:10px;color:#15803d;background:#f0fdf4;">
+                                                                <c:choose>
+                                                                    <c:when test="${not empty svRank}">${svRank}</c:when>
+                                                                    <c:otherwise>-</c:otherwise>
+                                                                </c:choose>
+                                                            </td>
                                                         </tr>
                                                     </c:forEach>
                                                 </tbody>

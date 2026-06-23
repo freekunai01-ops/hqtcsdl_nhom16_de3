@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -90,23 +91,26 @@
 
         /* ===== PRINT STYLES ===== */
         @media print {
+            @page { size: A4 landscape; margin: 10mm; }
             .report-header-bar { display: none !important; }
-            body { background: #fff !important; margin: 0; }
-            .report-container { margin: 0; padding: 10px; max-width: 100%; width: 100%; }
+            body { background: #fff !important; margin: 0; font-size: 9px; }
+            .report-container { margin: 0; padding: 5px; max-width: 100%; width: 100%; }
             .table-scroll-container {
                 overflow-x: visible !important;
                 overflow: visible !important;
             }
             .no-print { display: none !important; }
+            /* Lặp lại header bảng khi sang trang mới */
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
             tr { page-break-inside: avoid; }
-        }
-
-        /* Landscape for cross-tab (more columns) */
-        @media print and (orientation: landscape) {
-            .report-container { padding: 6px; }
-            .cross-tab th.subject-header { font-size: 9px; min-width: 80px; max-width: 100px; }
-            .cross-tab td { font-size: 10px; padding: 3px 2px; }
-            .report-table { font-size: 10px; }
+            .cross-tab th.subject-header { font-size: 8px; min-width: 60px; max-width: 80px; padding: 3px 2px; }
+            .cross-tab td { font-size: 8px; padding: 2px 2px; }
+            .cross-tab td.sv-info-cell { min-width: 120px; font-size: 8px; }
+            .report-table { font-size: 8px; }
+            .report-title-block .school-name { font-size: 10px; }
+            .report-title-block h4 { font-size: 13px; }
+            .report-title-block .sub-info { font-size: 10px; }
         }
     </style>
     <script>
@@ -226,16 +230,15 @@
     <div class="report-title-block">
         <div class="school-name">Học viện Công nghệ Bưu chính Viễn thông</div>
         <h4>Bảng điểm hết môn</h4>
-        <p class="sub-info"><strong>Khoa:</strong> ${tenKhoa} &nbsp;&mdash;&nbsp;
-           <strong>Niên khóa:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp;
-           <strong>Học kỳ:</strong> ${hocky}</p>
+        <p class="sub-info"><strong>Khoa:</strong> ${tenKhoa}</p>
+        <p class="sub-info"><strong>Niên khóa:</strong> ${nienkhoa} &nbsp;&mdash;&nbsp; <strong>Học kỳ:</strong> ${hocky}</p>
         <p class="sub-info"><strong>Môn học:</strong> ${tenmh} &nbsp;&mdash;&nbsp; <strong>Nhóm:</strong> ${nhom}</p>
     </div>
     <table class="report-table">
         <thead><tr>
             <th style="width:40px">STT</th><th>Mã SV</th><th>Họ</th><th>Tên</th>
-            <th style="width:60px">ĐCC</th><th style="width:60px">ĐGK</th>
-            <th style="width:60px">ĐCK</th><th style="width:80px">Điểm hết môn</th>
+            <th style="width:80px">Điểm chuyên cần</th><th style="width:70px">Điểm giữa kỳ</th>
+            <th style="width:70px">Điểm cuối kỳ</th><th style="width:80px">Điểm hết môn</th>
         </tr></thead>
         <tbody>
             <c:forEach items="${data}" var="d" varStatus="st">
@@ -279,9 +282,7 @@
         <thead><tr>
             <th style="width:40px">STT</th>
             <th>Tên môn học</th>
-            <th style="width:80px">Điểm (10)</th>
-            <th style="width:60px">Điểm chữ</th>
-            <th style="width:70px">Hệ 4</th>
+            <th style="width:80px">Điểm</th>
         </tr></thead>
         <tbody>
             <c:forEach items="${data}" var="d" varStatus="st">
@@ -291,21 +292,11 @@
                     <td style="text-align:center; font-weight:bold;">
                         <fmt:formatNumber value="${d.DIEM}" maxFractionDigits="1"/>
                     </td>
-                    <td style="text-align:center">${d.DIEMCHU}</td>
-                    <td style="text-align:center">${d.THANG4}</td>
                 </tr>
             </c:forEach>
         </tbody>
-        <tfoot>
-            <tr style="background:#e3eaf7;">
-                <td colspan="2" style="text-align:right; font-weight:bold;">GPA (Hệ 4):</td>
-                <td colspan="3" style="text-align:center; font-weight:bold; font-size:14px; color:#1a237e;">
-                    ${gpa} &nbsp;&mdash;&nbsp; <em>${xepLoai}</em>
-                </td>
-            </tr>
-        </tfoot>
     </table>
-    <p class="report-footer-stats">Số môn: <strong>${soMon}</strong> &nbsp;&mdash;&nbsp; GPA: <strong>${gpa}</strong> &nbsp;&mdash;&nbsp; Xếp loại: <strong>${xepLoai}</strong></p>
+    <p class="report-footer-stats">Số môn: <strong>${soMon}</strong></p>
 </c:if>
 
 <%-- ========== 5. BẢNG ĐIỂM TỔNG KẾT (Cross-Tab) ========== --%>
@@ -354,8 +345,6 @@
                             ${mh.TENMH}
                         </th>
                     </c:forEach>
-                    <th class="align-middle" style="width:55px; text-align:center; background:#eef2ff;">GPA</th>
-                    <th class="align-middle" style="width:80px; text-align:center; background:#f0fdf4;">Xếp loại</th>
                 </tr>
             </thead>
             <tbody>
@@ -366,59 +355,17 @@
                             <span style="font-size:11px;">${sv.HOTENSV}</span>
                         </td>
                         <c:forEach items="${dsmhCross}" var="mh">
+                            <c:set var="cellKey" value="${fn:trim(sv.MASV)}_${fn:trim(mh.MAMH)}"/>
+                            <c:set var="cellDiem" value="${diemMap[cellKey]}"/>
                             <td>
-                                <c:set var="hasScore" value="false"/>
-                                <c:forEach items="${diemData}" var="dd">
-                                    <c:if test="${dd.MASV.trim() == sv.MASV.trim() && dd.MAMH.trim() == mh.MAMH.trim()}">
-                                        <c:set var="hasScore" value="true"/>
-                                        <fmt:formatNumber value="${dd.DIEM}" maxFractionDigits="1"/>
-                                    </c:if>
-                                </c:forEach>
-                                <c:if test="${hasScore == 'false'}">
-                                    <span class="score-empty">&ndash;</span>
-                                </c:if>
+                                <c:choose>
+                                    <c:when test="${not empty cellDiem}">
+                                        <fmt:formatNumber value="${cellDiem}" maxFractionDigits="1"/>
+                                    </c:when>
+                                    <c:otherwise><span class="score-empty">&ndash;</span></c:otherwise>
+                                </c:choose>
                             </td>
                         </c:forEach>
-                        <%-- GPA/Xếp loại: tính client-side từ diemData cho SV này --%>
-                        <td class="gpa-cell">
-                            <c:set var="sumDiem" value="0"/>
-                            <c:set var="cntMon" value="0"/>
-                            <c:forEach items="${diemData}" var="dd">
-                                <c:if test="${dd.MASV.trim() == sv.MASV.trim()}">
-                                    <c:set var="cntMon" value="${cntMon + 1}"/>
-                                    <c:set var="diem10" value="${dd.DIEM}"/>
-                                    <c:choose>
-                                        <c:when test="${diem10 >= 9.0}"><c:set var="t4" value="4.0"/></c:when>
-                                        <c:when test="${diem10 >= 8.5}"><c:set var="t4" value="4.0"/></c:when>
-                                        <c:when test="${diem10 >= 8.0}"><c:set var="t4" value="3.5"/></c:when>
-                                        <c:when test="${diem10 >= 7.0}"><c:set var="t4" value="3.0"/></c:when>
-                                        <c:when test="${diem10 >= 6.5}"><c:set var="t4" value="2.5"/></c:when>
-                                        <c:when test="${diem10 >= 5.5}"><c:set var="t4" value="2.0"/></c:when>
-                                        <c:when test="${diem10 >= 5.0}"><c:set var="t4" value="1.5"/></c:when>
-                                        <c:when test="${diem10 >= 4.0}"><c:set var="t4" value="1.0"/></c:when>
-                                        <c:otherwise><c:set var="t4" value="0.0"/></c:otherwise>
-                                    </c:choose>
-                                    <c:set var="sumDiem" value="${sumDiem + t4}"/>
-                                </c:if>
-                            </c:forEach>
-                            <c:if test="${cntMon > 0}">
-                                <fmt:formatNumber value="${sumDiem / cntMon}" maxFractionDigits="2"/>
-                            </c:if>
-                            <c:if test="${cntMon == 0}">&ndash;</c:if>
-                        </td>
-                        <td class="rank-cell">
-                            <c:if test="${cntMon > 0}">
-                                <c:set var="gpaVal" value="${sumDiem / cntMon}"/>
-                                <c:choose>
-                                    <c:when test="${gpaVal >= 3.6}">Xuất sắc</c:when>
-                                    <c:when test="${gpaVal >= 3.2}">Giỏi</c:when>
-                                    <c:when test="${gpaVal >= 2.5}">Khá</c:when>
-                                    <c:when test="${gpaVal >= 2.0}">Trung bình</c:when>
-                                    <c:otherwise>Yếu</c:otherwise>
-                                </c:choose>
-                            </c:if>
-                            <c:if test="${cntMon == 0}">&ndash;</c:if>
-                        </td>
                     </tr>
                 </c:forEach>
             </tbody>

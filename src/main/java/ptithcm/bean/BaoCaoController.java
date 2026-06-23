@@ -2,6 +2,7 @@ package ptithcm.bean;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import javax.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,9 +28,15 @@ public class BaoCaoController {
     @RequestMapping(method = RequestMethod.GET)
     public String show(HttpSession session, ModelMap model) {
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
+        String nhom = (String) session.getAttribute("nhomQuyen");
+        String khoa = (String) session.getAttribute("maKhoa");
         model.addAttribute("khoaList", jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
         model.addAttribute("dsmh", jdbc.queryForList("SELECT MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
-        model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L ORDER BY L.MALOP"));
+        if ("KHOA".equals(nhom) && khoa != null && !khoa.equals("ALL")) {
+            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L WHERE L.MAKHOA=? ORDER BY L.MALOP", khoa.trim()));
+        } else {
+            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L ORDER BY L.MALOP"));
+        }
         model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI ORDER BY NIENKHOA DESC", String.class));
         model.addAttribute("dsHocKy", jdbc.queryForList("SELECT DISTINCT HOCKY FROM LOPTINCHI ORDER BY HOCKY", Integer.class));
         return "baocao";
@@ -165,49 +172,19 @@ public class BaoCaoController {
                         data = jdbc.queryForList("EXEC sp_InPhieuDiem ?", targetSV.trim());
                     }
                     
-                    // Tính điểm chữ + thang 4 cho từng môn
-                    double totalThang4 = 0;
-                    int count = 0;
-                    for (Map<String, Object> row : data) {
-                        Object diemObj = row.get("DIEM");
-                        if (diemObj != null) {
-                            double diem = ((Number) diemObj).doubleValue();
-                            String diemChu;
-                            double thang4;
-                            if (diem >= 9.0) { diemChu = "A+"; thang4 = 4.0; }
-                            else if (diem >= 8.5) { diemChu = "A"; thang4 = 4.0; }
-                            else if (diem >= 8.0) { diemChu = "B+"; thang4 = 3.5; }
-                            else if (diem >= 7.0) { diemChu = "B"; thang4 = 3.0; }
-                            else if (diem >= 6.5) { diemChu = "C+"; thang4 = 2.5; }
-                            else if (diem >= 5.5) { diemChu = "C"; thang4 = 2.0; }
-                            else if (diem >= 5.0) { diemChu = "D+"; thang4 = 1.5; }
-                            else if (diem >= 4.0) { diemChu = "D"; thang4 = 1.0; }
-                            else { diemChu = "F"; thang4 = 0.0; }
-                            row.put("DIEMCHU", diemChu);
-                            row.put("THANG4", thang4);
-                            totalThang4 += thang4;
-                            count++;
-                        }
-                    }
-                    double gpa = count > 0 ? Math.round((totalThang4 / count) * 100.0) / 100.0 : 0;
-                    String xepLoai;
-                    if (gpa >= 3.6) xepLoai = "Xuất sắc";
-                    else if (gpa >= 3.2) xepLoai = "Giỏi";
-                    else if (gpa >= 2.5) xepLoai = "Khá";
-                    else if (gpa >= 2.0) xepLoai = "Trung bình";
-                    else xepLoai = "Yếu";
-                    
                     model.addAttribute("svInfo", svInfo.get(0));
                     model.addAttribute("data", data);
-                    model.addAttribute("soMon", count);
-                    model.addAttribute("gpa", gpa);
-                    model.addAttribute("xepLoai", xepLoai);
+                    model.addAttribute("soMon", data.size());
                 }
             }
             else if ("BANG_DIEM_TK".equals(reportType)) {
-                List<Map<String, Object>> lopInfo = jdbc.queryForList(
-                        "SELECT L.MALOP, L.TENLOP, L.KHOAHOC, L.MAKHOA, K.TENKHOA " +
-                        "FROM LOP L JOIN KHOA K ON L.MAKHOA=K.MAKHOA WHERE L.MALOP=?", malop.trim());
+                // KHOA chỉ được in bảng điểm lớp thuộc khoa mình
+                String lopQuery = "PGV".equals(sessionNhom)
+                        ? "SELECT L.MALOP, L.TENLOP, L.KHOAHOC, L.MAKHOA, K.TENKHOA FROM LOP L JOIN KHOA K ON L.MAKHOA=K.MAKHOA WHERE L.MALOP=?"
+                        : "SELECT L.MALOP, L.TENLOP, L.KHOAHOC, L.MAKHOA, K.TENKHOA FROM LOP L JOIN KHOA K ON L.MAKHOA=K.MAKHOA WHERE L.MALOP=? AND L.MAKHOA=?";
+                List<Map<String, Object>> lopInfo = "PGV".equals(sessionNhom)
+                        ? jdbc.queryForList(lopQuery, malop.trim())
+                        : jdbc.queryForList(lopQuery, malop.trim(), sessionKhoa.trim());
                 if (lopInfo.isEmpty()) {
                     model.addAttribute("error", "Không tìm thấy lớp học!");
                 } else {
@@ -226,10 +203,20 @@ public class BaoCaoController {
                             "SELECT MASV, HO + ' ' + TEN AS HOTENSV FROM SINHVIEN WHERE MALOP=? ORDER BY MASV",
                             malop.trim());
 
+                    Map<String, Object> diemMap = new HashMap<>();
+                    for (Map<String, Object> row : diemData) {
+                        String masvVal = row.get("MASV") != null ? row.get("MASV").toString().trim() : "";
+                        String mamhVal = row.get("MAMH") != null ? row.get("MAMH").toString().trim() : "";
+                        Object diemVal = row.get("DIEM");
+                        if (!masvVal.isEmpty() && !mamhVal.isEmpty() && diemVal != null) {
+                            diemMap.put(masvVal + "_" + mamhVal, diemVal);
+                        }
+                    }
+
                     model.addAttribute("lopInfo", lopInfo.get(0));
                     model.addAttribute("dsmhCross", dsmhCross);
                     model.addAttribute("dssv", dssv);
-                    model.addAttribute("diemData", diemData);
+                    model.addAttribute("diemMap", diemMap);
                 }
             }
         } catch (Exception e) {
@@ -238,7 +225,11 @@ public class BaoCaoController {
 
         model.addAttribute("khoaList", jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
         model.addAttribute("dsmh", jdbc.queryForList("SELECT MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
-        model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L ORDER BY L.MALOP"));
+        if ("KHOA".equals(sessionNhom) && sessionKhoa != null && !sessionKhoa.equals("ALL")) {
+            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L WHERE L.MAKHOA=? ORDER BY L.MALOP", sessionKhoa.trim()));
+        } else {
+            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L ORDER BY L.MALOP"));
+        }
         model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI ORDER BY NIENKHOA DESC", String.class));
         model.addAttribute("dsHocKy", jdbc.queryForList("SELECT DISTINCT HOCKY FROM LOPTINCHI ORDER BY HOCKY", Integer.class));
     }

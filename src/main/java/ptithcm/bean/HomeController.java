@@ -46,6 +46,12 @@ public class HomeController {
 
     @RequestMapping(value = "/change-khoa", method = RequestMethod.POST)
     public String changeKhoa(@RequestParam("maKhoa") String maKhoa, HttpSession session, javax.servlet.http.HttpServletRequest request) {
+        String nhomQuyen = (String) session.getAttribute("nhomQuyen");
+        // KHOA chỉ được xem khoa của mình, không được đổi
+        if ("KHOA".equals(nhomQuyen)) {
+            String referer = request.getHeader("Referer");
+            return (referer != null && !referer.isEmpty()) ? "redirect:" + referer : "redirect:/home";
+        }
         session.setAttribute("maKhoa", maKhoa.trim());
         String referer = request.getHeader("Referer");
         if (referer != null && !referer.isEmpty()) {

@@ -121,7 +121,7 @@
         <div class="subbar-left">
             <label for="khoaSelector">Khoa đang xem:</label>
             <c:choose>
-                <c:when test="${sessionScope.nhomQuyen == 'PGV' || sessionScope.nhomQuyen == 'KHOA'}">
+                <c:when test="${sessionScope.nhomQuyen == 'PGV'}">
                     <form id="changeKhoaForm" action="${pageContext.request.contextPath}/change-khoa" method="post" style="display:inline;">
                         <select name="maKhoa" id="khoaSelector" onchange="document.getElementById('changeKhoaForm').submit();">
                             <option value="ALL" ${sessionScope.maKhoa == 'ALL' ? 'selected' : ''}>Tất cả</option>
@@ -130,6 +130,11 @@
                             </c:forEach>
                         </select>
                     </form>
+                </c:when>
+                <c:when test="${sessionScope.nhomQuyen == 'KHOA'}">
+                    <select id="khoaSelector" disabled>
+                        <option selected>${sessionScope.maKhoa}</option>
+                    </select>
                 </c:when>
                 <c:otherwise>
                     <select id="khoaSelector" disabled>

@@ -174,7 +174,7 @@ public class TaiKhoanController {
             } catch (Exception e) {}
         }
 
-        if (loginName.equalsIgnoreCase("pgv_admin") || loginName.equalsIgnoreCase("admin") || loginName.equalsIgnoreCase("sv") || loginName.equalsIgnoreCase("khoa_all")) {
+        if (loginName.equalsIgnoreCase("pgv_admin") || loginName.equalsIgnoreCase("admin") || loginName.equalsIgnoreCase("sv")) {
             ra.addFlashAttribute("error", "Không được xóa tài khoản hệ thống mặc định!");
             return "redirect:/taikhoan";
         }

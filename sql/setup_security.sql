@@ -15,11 +15,6 @@ IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'pgv_admin')
     CREATE LOGIN pgv_admin WITH PASSWORD = '123456', DEFAULT_DATABASE = QLDSV_HTC, CHECK_POLICY = OFF;
 GO
 
--- Login KHOA chung (đại diện nhóm quyền KHOA, xem tất cả read-only)
-IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'khoa_all')
-    CREATE LOGIN khoa_all WITH PASSWORD = '123456', DEFAULT_DATABASE = QLDSV_HTC, CHECK_POLICY = OFF;
-GO
-
 -- Login chung cho tất cả Sinh viên
 IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'sv')
     CREATE LOGIN sv WITH PASSWORD = 'sv123', DEFAULT_DATABASE = QLDSV_HTC, CHECK_POLICY = OFF;
@@ -33,9 +28,6 @@ GO
 
 IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'pgv_admin')
     CREATE USER pgv_admin FOR LOGIN pgv_admin;
-GO
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'khoa_all')
-    CREATE USER khoa_all FOR LOGIN khoa_all;
 GO
 IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'sv')
     CREATE USER sv FOR LOGIN sv;
@@ -63,7 +55,6 @@ GO
 USE master;
 ALTER SERVER ROLE securityadmin ADD MEMBER pgv_admin;
 USE QLDSV_HTC;
-ALTER ROLE KHOA ADD MEMBER khoa_all;
 ALTER ROLE NHOM_SV ADD MEMBER sv;
 GO
 
@@ -119,7 +110,6 @@ IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[sp_Tao
 GO
 
 PRINT N'=== PHÂN QUYỀN SQL SERVER HOÀN TẤT ==='
-PRINT N'Logins: pgv_admin, khoa_all, sv'
+PRINT N'Logins: pgv_admin, sv (+ khoa_cntt/vt/kt/ck tao qua sp_TaoTaiKhoan)'
 PRINT N'Roles: PGV (toàn quyền), KHOA (hạn chế read-only), NHOM_SV (tối thiểu)'
-PRINT N'Tài khoản KHOA chung: khoa_all/123456 → xem tất cả, lọc theo khoa'
 GO

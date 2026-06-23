@@ -823,7 +823,7 @@
             return;
         }
         
-        if (login === 'pgv_admin' || login === 'admin' || login === 'sv' || login === 'khoa_all') {
+        if (login === 'pgv_admin' || login === 'admin' || login === 'sv') {
             alert('Không được xóa tài khoản hệ thống mặc định!');
             return;
         }

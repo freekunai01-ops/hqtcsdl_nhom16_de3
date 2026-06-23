@@ -1,4 +1,4 @@
--- ========================================================
+﻿-- ========================================================
 -- QLDSV_HTC - STORED PROCEDURES FOR SECURITY AND LOGINS
 -- ========================================================
 
@@ -170,7 +170,6 @@ BEGIN
                  CASE COALESCE(sp.name, dp.name)
                       WHEN 'pgv_admin' THEN N'Phòng Giáo Vụ'
                       WHEN 'admin' THEN N'Quản trị PGV'
-                      WHEN 'khoa_all'  THEN N'Quản lý Khoa (tất cả)'
                       WHEN 'sv'        THEN N'Sinh viên (chung)'
                       ELSE COALESCE(sp.name, dp.name)
                  END) AS HOTEN,

@@ -120,9 +120,9 @@
 <td style="text-align:center;">${st.index+1}</td>
 <td>${sv.MASV}<input type="hidden" name="masv[]" value="${sv.MASV}"></td>
 <td>${sv.HOTENSV}</td><td>${sv.MALOP}</td>
-<td style="text-align:center;"><input type="number" name="diemCC[]" class="diem-input dcc" min="0" max="10" step="1" value="${sv.DIEM_CC}" ${sessionScope.nhomQuyen != 'PGV' ? 'disabled' : ''} oninput="recalcRow(this)"></td>
-<td style="text-align:center;"><input type="number" name="diemGK[]" class="diem-input dgk" min="0" max="10" step="0.5" value="${sv.DIEM_GK}" ${sessionScope.nhomQuyen != 'PGV' ? 'disabled' : ''} oninput="recalcRow(this)"></td>
-<td style="text-align:center;"><input type="number" name="diemCK[]" class="diem-input dck" min="0" max="10" step="0.5" value="${sv.DIEM_CK}" ${sessionScope.nhomQuyen != 'PGV' ? 'disabled' : ''} oninput="recalcRow(this)"></td>
+<td style="text-align:center;"><input type="number" name="diemCC[]" class="diem-input dcc" min="0" max="10" step="1" value="${sv.DIEM_CC}" ${(sessionScope.nhomQuyen == 'PGV' || (sessionScope.nhomQuyen == 'KHOA' && (fn:trim(sessionScope.maKhoa) == 'ALL' || fn:trim(sessionScope.maKhoa) == fn:trim(classKhoa)))) ? '' : 'disabled'} oninput="recalcRow(this)"></td>
+<td style="text-align:center;"><input type="number" name="diemGK[]" class="diem-input dgk" min="0" max="10" step="0.5" value="${sv.DIEM_GK}" ${(sessionScope.nhomQuyen == 'PGV' || (sessionScope.nhomQuyen == 'KHOA' && (fn:trim(sessionScope.maKhoa) == 'ALL' || fn:trim(sessionScope.maKhoa) == fn:trim(classKhoa)))) ? '' : 'disabled'} oninput="recalcRow(this)"></td>
+<td style="text-align:center;"><input type="number" name="diemCK[]" class="diem-input dck" min="0" max="10" step="0.5" value="${sv.DIEM_CK}" ${(sessionScope.nhomQuyen == 'PGV' || (sessionScope.nhomQuyen == 'KHOA' && (fn:trim(sessionScope.maKhoa) == 'ALL' || fn:trim(sessionScope.maKhoa) == fn:trim(classKhoa)))) ? '' : 'disabled'} oninput="recalcRow(this)"></td>
 <td style="text-align:center;" class="td-hm"><span class="grade-hm hm-val"><c:if test="${sv.DIEM_HM != null}"><fmt:formatNumber value="${sv.DIEM_HM}" maxFractionDigits="2"/></c:if></span></td>
 <td style="text-align:center;" class="td-chu"><span class="grade-chu chu-val"></span></td>
 <td style="text-align:center;" class="td-he4"><span class="grade-he4 he4-val"></span></td>
@@ -132,7 +132,7 @@
 </tbody></table></div>
 </fieldset>
 <div class="form-buttons-row">
-<c:if test="${sessionScope.nhomQuyen == 'PGV'}">
+<c:if test="${sessionScope.nhomQuyen == 'PGV' || (sessionScope.nhomQuyen == 'KHOA' && (fn:trim(sessionScope.maKhoa) == 'ALL' || fn:trim(sessionScope.maKhoa) == fn:trim(classKhoa)))}">
 <button type="submit" class="win-form-btn btn-save"><i class="fas fa-save"></i> Ghi bảng điểm</button>
 <button type="button" class="win-form-btn" onclick="window.location.reload()"><i class="fas fa-undo"></i> Phục hồi</button>
 </c:if>

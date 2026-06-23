@@ -27,7 +27,7 @@
             </div>
         </c:if>
         <c:if test="${not empty error}">
-            <div style="background:#f8d7da;color:#842029;border:1px solid #f5c2c7;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:12.5px;">
+            <div class="error-alert alert-danger" style="background:#f8d7da;color:#842029;border:1px solid #f5c2c7;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:12.5px;">
                 <i class="fas fa-exclamation-triangle"></i> <strong>LỖI:</strong> ${error}
             </div>
         </c:if>

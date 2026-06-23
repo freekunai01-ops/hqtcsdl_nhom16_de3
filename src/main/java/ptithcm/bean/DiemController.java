@@ -62,13 +62,13 @@ public class DiemController {
         List<Map<String, Object>> ltcRows;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
             ltcRows = jdbc.queryForList(
-                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
+                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA, RTRIM(LTC.MAKHOA) AS MAKHOA " +
                 "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
                 "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=?",
                 nienkhoa.trim(), hocky, mamh.trim(), nhom);
         } else {
             ltcRows = jdbc.queryForList(
-                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
+                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA, RTRIM(LTC.MAKHOA) AS MAKHOA " +
                 "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
                 "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=? AND LTC.MAKHOA=?",
                 nienkhoa.trim(), hocky, mamh.trim(), nhom, maKhoa);
@@ -107,6 +107,7 @@ public class DiemController {
 
         model.addAttribute("dssv", dssv);
         model.addAttribute("maltc", maltc);
+        model.addAttribute("classKhoa", ltcInfo.get("MAKHOA"));
         model.addAttribute("nienkhoa", nienkhoa.trim());
         model.addAttribute("hocky", hocky);
         model.addAttribute("mamh", mamh.trim());
@@ -140,6 +141,15 @@ public class DiemController {
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
+            if ("KHOA".equals(nhomQuyen)) {
+                String maKhoa = (String) session.getAttribute("maKhoa");
+                String classKhoa = jdbc.queryForObject(
+                    "SELECT RTRIM(MAKHOA) FROM LOPTINCHI WHERE MALTC = ?", String.class, maltc);
+                if (!"ALL".equals(maKhoa) && !maKhoa.equals(classKhoa)) {
+                    ra.addFlashAttribute("error", "Bạn không có quyền ghi điểm cho lớp của khoa khác!");
+                    return "redirect:/diem?nienkhoa=" + nienkhoa.trim() + "&hocky=" + hocky + "&mamh=" + mamh.trim() + "&nhom=" + nhom;
+                }
+            }
             // Validate trước
             for (int i = 0; i < masvArr.length; i++) {
                 Double cc = parseDoubleOrNull(diemCCArr[i]), gk = parseDoubleOrNull(diemGKArr[i]), ck = parseDoubleOrNull(diemCKArr[i]);
