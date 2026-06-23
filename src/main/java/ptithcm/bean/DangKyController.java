@@ -165,7 +165,6 @@ public class DangKyController {
         List<Map<String, Object>> myLTC = jdbc.queryForList(
                 "SELECT LTC.MALTC, LTC.NIENKHOA, LTC.HOCKY, MH.TENMH, LTC.NHOM, " +
                         "MH.SOTIET_LT, MH.SOTIET_TH, " +
-                        "LTC.NGAYHETHAN_HUY, " +
                         "CASE WHEN DK.DIEM_CK IS NOT NULL THEN " +
                         "  ROUND(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK), 2) " +
                         "  ELSE NULL END AS DIEM_HM " +
@@ -313,16 +312,6 @@ public class DangKyController {
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
-            java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
-            List<Map<String, Object>> ltcRows = jdbc.queryForList("SELECT NGAYHETHAN_HUY FROM LOPTINCHI WHERE MALTC=?",
-                    maltc);
-            if (!ltcRows.isEmpty() && ltcRows.get(0).get("NGAYHETHAN_HUY") != null) {
-                java.sql.Date hanHuy = (java.sql.Date) ltcRows.get(0).get("NGAYHETHAN_HUY");
-                if (today.after(hanHuy)) {
-                    ra.addFlashAttribute("error", "Không thể hủy — đã quá hạn hủy đăng ký (" + hanHuy + ")!");
-                    return "redirect:/dangky";
-                }
-            }
             List<Map<String, Object>> rows = jdbc.queryForList("SELECT DIEM_CK FROM DANGKY WHERE MALTC=? AND MASV=?",
                     maltc, masv);
             if (!rows.isEmpty() && rows.get(0).get("DIEM_CK") != null) {

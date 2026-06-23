@@ -181,15 +181,13 @@
 <div class="win-table-container" style="max-height:280px;">
 <table class="win-table" id="myLTCTable"><thead><tr>
 <th data-sort-col="0">Niên khóa</th><th data-sort-col="1">HK</th><th data-sort-col="2">Tên môn học</th>
-<th data-sort-col="3">N</th><th data-sort-col="4">TC</th><th data-sort-col="5">Hạn hủy</th><th data-sort-col="6">TT hủy</th><th data-sort-col="7">Điểm HM</th><th style="width:35px;">Hủy</th>
+<th data-sort-col="3">N</th><th data-sort-col="4">TC</th><th data-sort-col="5">TT hủy</th><th data-sort-col="6">Điểm HM</th><th style="width:35px;">Hủy</th>
 </tr></thead><tbody>
 <c:if test="${not empty myLTC}"><c:forEach items="${myLTC}" var="m">
-<c:set var="canC" value="true"/><c:set var="cSt" value="Còn hạn hủy"/>
-<c:if test="${not empty m.NGAYHETHAN_HUY && now.time > m.NGAYHETHAN_HUY.time}"><c:set var="canC" value="false"/><c:set var="cSt" value="Hết hạn hủy"/></c:if>
+<c:set var="canC" value="true"/><c:set var="cSt" value="Có thể hủy"/>
 <c:if test="${m.DIEM_HM != null}"><c:set var="canC" value="false"/><c:set var="cSt" value="Đã có điểm"/></c:if>
 <tr><td>${m.NIENKHOA}</td><td>${m.HOCKY}</td><td>${m.TENMH}</td><td>${m.NHOM}</td>
 <td style="text-align:center;"><span style="background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">${m.TINCHI}</span></td>
-<td style="font-size:11px;"><fmt:formatDate value="${m.NGAYHETHAN_HUY}" pattern="yyyy-MM-dd"/></td>
 <td style="font-size:11px;font-weight:bold;color:${canC?'#16a34a':'#dc2626'};">${cSt}</td>
 <td style="text-align:center;font-weight:bold;<c:choose><c:when test="${m.DIEM_HM==null}">color:#94a3b8;</c:when><c:when test="${m.DIEM_HM<5}">color:#dc2626;</c:when><c:when test="${m.DIEM_HM<7}">color:#d97706;</c:when><c:otherwise>color:#16a34a;</c:otherwise></c:choose>">
 <c:choose><c:when test="${m.DIEM_HM!=null}"><fmt:formatNumber value="${m.DIEM_HM}" pattern="#0.00"/></c:when><c:otherwise>—</c:otherwise></c:choose></td>
@@ -200,7 +198,7 @@
 <button type="submit" class="win-form-btn" style="padding:1px 5px;min-width:auto;height:18px;font-size:10px;color:#dc2626;border-color:#fca5a5;">✕</button>
 </form></c:if></td></tr>
 </c:forEach></c:if>
-<c:if test="${empty myLTC}"><tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px;">Chưa đăng ký LTC nào.</td></tr></c:if>
+<c:if test="${empty myLTC}"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:20px;">Chưa đăng ký LTC nào.</td></tr></c:if>
 </tbody></table></div>
 </fieldset>
 </div>
