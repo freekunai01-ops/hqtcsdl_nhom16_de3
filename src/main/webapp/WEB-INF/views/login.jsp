@@ -334,7 +334,7 @@
 
         <!-- Tab selection headers -->
         <div class="tab-control">
-            <button type="button" class="tab-btn active" id="btnTabGV" onclick="selectLoginTab('GV')">GIẢNG VIÊN</button>
+            <button type="button" class="tab-btn active" id="btnTabGV" onclick="selectLoginTab('GV')">CÁN BỘ</button>
             <button type="button" class="tab-btn" id="btnTabSV" onclick="selectLoginTab('SV')">SINH VIÊN</button>
         </div>
 
@@ -353,7 +353,7 @@
             <div class="form-grid">
                 <!-- Username (Login / Student code) row -->
                 <div class="grid-row">
-                    <label class="grid-label" id="labelUsername">Login:</label>
+                    <label class="grid-label" id="labelUsername">Login cán bộ:</label>
                     <div class="grid-input-container">
                         <span class="grid-input-icon"><i class="fa fa-user" id="iconUsername"></i></span>
                         <input type="text" name="username" id="username" class="grid-input" placeholder="Nhập login" required autocomplete="off">
@@ -362,10 +362,13 @@
 
                 <!-- Password row -->
                 <div class="grid-row">
-                    <label class="grid-label">Password:</label>
+                    <label class="grid-label" id="labelPassword">Mật khẩu:</label>
                     <div class="grid-input-container">
                         <span class="grid-input-icon"><i class="fa fa-lock"></i></span>
-                        <input type="password" name="password" id="password" class="grid-input" placeholder="......" required>
+                        <input type="password" name="password" id="password" class="grid-input" placeholder="......" required style="padding-right: 32px;">
+                        <span id="togglePassword" style="position: absolute; right: 10px; cursor: pointer; color: #888888; display: flex; align-items: center; z-index: 10; height: 100%;">
+                            <i class="fa fa-eye-slash" id="togglePasswordIcon"></i>
+                        </span>
                     </div>
                 </div>
 
@@ -408,7 +411,7 @@
 
 <script>
     // Handles changing tabs between Giảng viên and Sinh viên
-    function selectLoginTab(tabType) {
+    function selectLoginTab(tabType, isInit) {
         var btnGV = document.getElementById("btnTabGV");
         var btnSV = document.getElementById("btnTabSV");
         var inputType = document.getElementById("loginType");
@@ -419,15 +422,17 @@
         var selectRole = document.getElementById("selectedRole");
         var helpText = document.getElementById("helpText");
 
-        // Clear input values
-        inputUser.value = "";
-        document.getElementById("password").value = "";
+        if (!isInit) {
+            // Clear input values only on tab click
+            inputUser.value = "";
+            document.getElementById("password").value = "";
+        }
 
         if (tabType === 'GV') {
             btnGV.classList.add("active");
             btnSV.classList.remove("active");
             inputType.value = "GV";
-            labelUser.textContent = "Login:";
+            labelUser.textContent = "Login cán bộ:";
             inputUser.placeholder = "Nhập login";
             iconUser.className = "fa fa-user";
             rowRole.style.display = "flex";
@@ -437,7 +442,7 @@
             btnSV.classList.add("active");
             btnGV.classList.remove("active");
             inputType.value = "SV";
-            labelUser.textContent = "Mã SV:";
+            labelUser.textContent = "Mã sinh viên:";
             inputUser.placeholder = "Nhập mã sinh viên";
             iconUser.className = "fa fa-id-card";
             rowRole.style.display = "none";
@@ -458,6 +463,41 @@
             window.location.href = "https://google.com";
         }
     }
+
+    // Toggle Password Visibility
+    document.getElementById("togglePassword").addEventListener("click", function() {
+        var pwd = document.getElementById("password");
+        var icon = document.getElementById("togglePasswordIcon");
+        if (pwd.type === "password") {
+            pwd.type = "text";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        } else {
+            pwd.type = "password";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        }
+    });
+
+    // Initialize or restore state on load
+    window.addEventListener("load", function() {
+        var prevLoginType = '${loginType}';
+        var prevUsername = '${username}';
+        var prevSelectedRole = '${selectedRole}';
+
+        if (prevLoginType === 'SV') {
+            selectLoginTab('SV', true);
+        } else {
+            selectLoginTab('GV', true);
+            if (prevSelectedRole) {
+                document.getElementById("selectedRole").value = prevSelectedRole;
+            }
+        }
+
+        if (prevUsername) {
+            document.getElementById("username").value = prevUsername;
+        }
+    });
 </script>
 
 </body>

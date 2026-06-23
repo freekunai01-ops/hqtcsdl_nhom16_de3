@@ -46,6 +46,8 @@ public class LoginController {
                              "WHERE MASV = ? AND DANGHIHOC = 0";
                 List<Map<String, Object>> rows = userJdbc.queryForList(sql, username.trim());
                 if (rows.isEmpty()) {
+                    model.addAttribute("loginType", loginType);
+                    model.addAttribute("username", username);
                     model.addAttribute("error", "Mã sinh viên không tồn tại hoặc đã nghỉ học!");
                     return "login";
                 }
@@ -53,6 +55,8 @@ public class LoginController {
                 Map<String, Object> sv = rows.get(0);
                 String dbPassword = sv.get("PASSWORD") != null ? sv.get("PASSWORD").toString().trim() : "";
                 if (!dbPassword.equals(password)) {
+                    model.addAttribute("loginType", loginType);
+                    model.addAttribute("username", username);
                     model.addAttribute("error", "Mật khẩu sinh viên không đúng!");
                     return "login";
                 }
@@ -90,11 +94,17 @@ public class LoginController {
                 try {
                     results = userJdbc.queryForList("EXEC sp_ThongTinDangNhap ?", username.trim());
                 } catch (Exception e) {
+                    model.addAttribute("loginType", loginType);
+                    model.addAttribute("username", username);
+                    model.addAttribute("selectedRole", selectedRole);
                     model.addAttribute("error", "Tên đăng nhập hoặc mật khẩu SQL Server không đúng!");
                     return "login";
                 }
 
                 if (results.isEmpty()) {
+                    model.addAttribute("loginType", loginType);
+                    model.addAttribute("username", username);
+                    model.addAttribute("selectedRole", selectedRole);
                     model.addAttribute("error", "Tài khoản không tồn tại trên hệ thống!");
                     return "login";
                 }
@@ -106,6 +116,9 @@ public class LoginController {
 
                 // Kiểm tra xem nhóm quyền được chọn ở giao diện có khớp với phân quyền thực tế trong CSDL không
                 if (selectedRole != null && !selectedRole.trim().isEmpty() && !selectedRole.equals(nhomQuyen)) {
+                    model.addAttribute("loginType", loginType);
+                    model.addAttribute("username", username);
+                    model.addAttribute("selectedRole", selectedRole);
                     model.addAttribute("error", "Nhóm quyền chọn đăng nhập không khớp với phân quyền của tài khoản!");
                     return "login";
                 }
@@ -147,6 +160,9 @@ public class LoginController {
             }
             return "redirect:/home";
         } catch (Exception e) {
+            model.addAttribute("loginType", loginType);
+            model.addAttribute("username", username);
+            model.addAttribute("selectedRole", selectedRole);
             model.addAttribute("error", "Lỗi đăng nhập: " + e.getMessage());
             return "login";
         }
