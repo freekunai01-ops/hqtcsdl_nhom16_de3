@@ -62,13 +62,13 @@ public class DiemController {
         List<Map<String, Object>> ltcRows;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
             ltcRows = jdbc.queryForList(
-                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOIDA, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
+                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
                 "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
                 "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=?",
                 nienkhoa.trim(), hocky, mamh.trim(), nhom);
         } else {
             ltcRows = jdbc.queryForList(
-                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOIDA, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
+                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA " +
                 "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
                 "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=? AND LTC.MAKHOA=?",
                 nienkhoa.trim(), hocky, mamh.trim(), nhom, maKhoa);
@@ -114,7 +114,7 @@ public class DiemController {
         model.addAttribute("nhom", nhom);
         model.addAttribute("hotenGV", ltcInfo.get("HOTENGV"));
         model.addAttribute("tenKhoa", ltcInfo.get("TENKHOA"));
-        model.addAttribute("sosvToida", ltcInfo.get("SOSVTOIDA"));
+        model.addAttribute("sosvToithieu", ltcInfo.get("SOSVTOITHIEU"));
         model.addAttribute("huylop", huylop);
         model.addAttribute("totalSV", totalSV);
         model.addAttribute("daNhap", daNhap);

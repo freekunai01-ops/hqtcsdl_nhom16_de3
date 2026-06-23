@@ -68,7 +68,7 @@
 <div class="ltc-info">
 <div class="ltc-info-item"><div class="ii-label">Môn học</div><div class="ii-val">${tenmh}</div></div>
 <div class="ltc-info-item"><div class="ii-label">Giảng viên</div><div class="ii-val">${hotenGV}</div></div>
-<div class="ltc-info-item"><div class="ii-label">Sĩ số ĐK/Max</div><div class="ii-val">${totalSV}/${sosvToida}</div></div>
+<div class="ltc-info-item"><div class="ii-label">Sĩ số ĐK/Tối thiểu</div><div class="ii-val">${totalSV}/${sosvToithieu}</div></div>
 <div class="ltc-info-item"><div class="ii-label">Trạng thái LTC</div><div class="ii-val">
 <c:choose><c:when test="${huylop}"><span style="color:#dc2626;">Đã hủy</span></c:when><c:otherwise><span style="color:#16a34a;">Đang mở</span></c:otherwise></c:choose>
 </div></div>

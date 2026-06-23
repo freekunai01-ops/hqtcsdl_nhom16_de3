@@ -141,20 +141,14 @@
 <table class="win-table" id="regTable"><thead><tr>
 <th style="width:40px;text-align:center;">Chọn</th>
 <th data-sort-col="1">Mã MH</th><th data-sort-col="2">Tên môn học</th><th data-sort-col="3">Nhóm</th><th data-sort-col="4">TC</th>
-<th data-sort-col="5">GV giảng</th><th data-sort-col="6">Hết ĐK</th><th data-sort-col="7">Trạng thái</th><th data-sort-col="8">SV ĐK/Max</th>
+<th data-sort-col="5">GV giảng</th><th data-sort-col="6">Sĩ số ĐK / Tối thiểu</th>
 </tr></thead><tbody>
-<c:if test="${not empty dsltc}"><jsp:useBean id="now" class="java.util.Date"/>
+<c:if test="${not empty dsltc}">
 <c:forEach items="${dsltc}" var="l">
 <c:set var="isReg" value="false"/><c:forEach items="${daDangKy}" var="dk"><c:if test="${dk.MALTC==l.MALTC}"><c:set var="isReg" value="true"/></c:if></c:forEach>
-<c:set var="isFull" value="${l.SOSVDK>=l.SOSVTOIDA}"/>
-<c:set var="dlOk" value="true"/><c:set var="dlSt" value="Đang mở"/>
-<c:if test="${not empty l.NGAYBATDAU_DK && now.time < l.NGAYBATDAU_DK.time}"><c:set var="dlOk" value="false"/><c:set var="dlSt" value="Chưa tới hạn"/></c:if>
-<c:if test="${not empty l.NGAYKETTHUC_DK && now.time > l.NGAYKETTHUC_DK.time}"><c:set var="dlOk" value="false"/><c:set var="dlSt" value="Hết hạn ĐK"/></c:if>
 <tr><td style="text-align:center;">
 <c:choose>
 <c:when test="${isReg}"><span style="color:#16a34a;font-weight:bold;font-size:10px;">✔ Đã ĐK</span></c:when>
-<c:when test="${isFull}"><span style="color:#dc2626;font-size:10px;">Đầy</span></c:when>
-<c:when test="${!dlOk}"><span style="color:#9ca3af;font-size:10px;">🔒</span></c:when>
 <c:when test="${sessionScope.nhomQuyen=='KHOA'}"><span style="color:#9ca3af;font-size:10px;">—</span></c:when>
 <c:otherwise><input type="checkbox" name="selectedLtcs" value="${l.MALTC}" onchange="updateSelectedCount()"></c:otherwise>
 </c:choose>
@@ -162,11 +156,9 @@
 <td>${l.MAMH}</td><td>${l.TENMH}</td><td>${l.NHOM}</td>
 <td style="text-align:center;"><span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:bold;">${l.TINCHI}</span></td>
 <td>${l.HOTENGV}</td>
-<td style="font-size:11px;"><fmt:formatDate value="${l.NGAYKETTHUC_DK}" pattern="yyyy-MM-dd"/></td>
-<td style="font-size:11px;font-weight:bold;color:${dlOk?'#16a34a':'#dc2626'};">${dlSt}</td>
-<td style="text-align:center;${isFull?'color:#dc2626;font-weight:bold;':''}">${l.SOSVDK}/${l.SOSVTOIDA}</td>
+<td style="text-align:center;">${l.SOSVDK} / ${l.SOSVTOITHIEU}</td>
 </tr></c:forEach></c:if>
-<c:if test="${empty dsltc}"><tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px;">Không tìm thấy LTC nào.</td></tr></c:if>
+<c:if test="${empty dsltc}"><tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">Không tìm thấy LTC nào.</td></tr></c:if>
 </tbody></table></div>
 <div id="limitWarning" style="display:none;padding:6px 12px;margin-top:8px;background:#fef2f2;border:1px solid #fca5a5;border-radius:4px;font-size:12px;color:#dc2626;font-weight:bold;"></div>
 <div class="form-buttons-row" style="margin-top:8px;">

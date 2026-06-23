@@ -33,9 +33,7 @@ public class LopTinChiController {
             dsltc = jdbc.queryForList(
                     "SELECT LTC.MALTC, RTRIM(LTC.NIENKHOA) AS NIENKHOA, LTC.HOCKY, RTRIM(LTC.MAMH) AS MAMH, LTC.NHOM, "
                             +
-                            "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.SOSVTOIDA, LTC.HUYLOP, "
-                            +
-                            "LTC.NGAYBATDAU_DK, LTC.NGAYKETTHUC_DK, LTC.NGAYHETHAN_HUY, LTC.LYDOHUY, MH.TENMH, " +
+                            "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.HUYLOP, MH.TENMH, " +
                             "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
                             "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK "
                             +
@@ -48,9 +46,7 @@ public class LopTinChiController {
             dsltc = jdbc.queryForList(
                     "SELECT LTC.MALTC, RTRIM(LTC.NIENKHOA) AS NIENKHOA, LTC.HOCKY, RTRIM(LTC.MAMH) AS MAMH, LTC.NHOM, "
                             +
-                            "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.SOSVTOIDA, LTC.HUYLOP, "
-                            +
-                            "LTC.NGAYBATDAU_DK, LTC.NGAYKETTHUC_DK, LTC.NGAYHETHAN_HUY, LTC.LYDOHUY, MH.TENMH, " +
+                            "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.HUYLOP, MH.TENMH, " +
                             "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
                             "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK "
                             +
@@ -80,17 +76,11 @@ public class LopTinChiController {
             @RequestParam int nhom,
             @RequestParam String magv,
             @RequestParam int sosvtoithieu,
-            @RequestParam(required = false, defaultValue = "40") int sosvtoida,
             @RequestParam(required = false, defaultValue = "false") boolean huylop,
-            @RequestParam(required = false) String ngaybatdauDk,
-            @RequestParam(required = false) String ngayketthucDk,
-            @RequestParam(required = false) String ngayhethanHuy,
-            @RequestParam(required = false) String lydohuy,
             @RequestParam(required = false) String maKhoa,
             HttpSession session, RedirectAttributes ra) {
         System.out.println("===> DEBUG: LopTinChiController.save action=" + action + ", nienkhoa=" + nienkhoa
-                + ", hocky=" + hocky + ", mamh=" + mamh + ", nhom=" + nhom + ", magv=" + magv + ", batdau="
-                + ngaybatdauDk + ", ketthuc=" + ngayketthucDk + ", hethan=" + ngayhethanHuy + ", nhomQuyen="
+                + ", hocky=" + hocky + ", mamh=" + mamh + ", nhom=" + nhom + ", magv=" + magv + ", nhomQuyen="
                 + session.getAttribute("nhomQuyen"));
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             System.out.println("===> DEBUG: Blocked due to role: " + session.getAttribute("nhomQuyen"));
@@ -113,55 +103,16 @@ public class LopTinChiController {
             }
         }
 
-        // Parse deadline dates
-        Date dbBatdau = null, dbKetthuc = null, dbHethan = null;
-        try {
-            if (ngaybatdauDk != null && !ngaybatdauDk.isEmpty())
-                dbBatdau = Date.valueOf(ngaybatdauDk);
-            if (ngayketthucDk != null && !ngayketthucDk.isEmpty())
-                dbKetthuc = Date.valueOf(ngayketthucDk);
-            if (ngayhethanHuy != null && !ngayhethanHuy.isEmpty())
-                dbHethan = Date.valueOf(ngayhethanHuy);
-        } catch (Exception e) {
-            ra.addFlashAttribute("error", "Lỗi: Định dạng ngày không hợp lệ!");
-            return "redirect:/loptinchi";
-        }
-
-        // Validate date order: batdau <= ketthuc <= hethan
-        if (dbBatdau != null && dbKetthuc != null && dbBatdau.after(dbKetthuc)) {
-            ra.addFlashAttribute("error", "Lỗi: Ngày bắt đầu ĐK phải trước hoặc bằng ngày kết thúc ĐK!");
-            return "redirect:/loptinchi";
-        }
-        if (dbKetthuc != null && dbHethan != null && dbKetthuc.after(dbHethan)) {
-            ra.addFlashAttribute("error", "Lỗi: Ngày kết thúc ĐK phải trước hoặc bằng hạn hủy!");
-            return "redirect:/loptinchi";
-        }
-
-        // Validate: hủy lớp phải có lý do
-        if (huylop && (lydohuy == null || lydohuy.trim().isEmpty())) {
-            ra.addFlashAttribute("error", "Lỗi: Hủy lớp phải nhập lý do hủy!");
-            return "redirect:/loptinchi";
-        }
-
-        // Validate: sĩ số tối đa >= tối thiểu
-        if (sosvtoida < sosvtoithieu) {
-            ra.addFlashAttribute("error",
-                    "Lỗi: Sĩ số tối đa (" + sosvtoida + ") phải >= sĩ số tối thiểu (" + sosvtoithieu + ")!");
-            return "redirect:/loptinchi";
-        }
-
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         String kh = (maKhoa != null && !maKhoa.isEmpty()) ? maKhoa.trim() : (String) session.getAttribute("maKhoa");
         if (kh == null || "ALL".equals(kh)) {
             kh = jdbc.queryForObject("SELECT TOP 1 MAKHOA FROM KHOA ORDER BY MAKHOA", String.class);
         }
-        String lydo = (lydohuy != null && !lydohuy.trim().isEmpty()) ? lydohuy.trim() : null;
         try {
             if ("add".equals(action)) {
-                jdbc.update("EXEC sp_ThemLopTinChi ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
-                        nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), kh, sosvtoithieu, sosvtoida,
-                        huylop ? 1 : 0,
-                        dbBatdau, dbKetthuc, dbHethan, lydo);
+                jdbc.update("EXEC sp_ThemLopTinChi ?, ?, ?, ?, ?, ?, ?, ?",
+                        nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), kh, sosvtoithieu,
+                        huylop ? 1 : 0);
                 try {
                     maltc = jdbc.queryForObject(
                             "SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=?",
@@ -170,10 +121,9 @@ public class LopTinChiController {
                 }
                 ra.addFlashAttribute("success", "Mở lớp tín chỉ thành công!");
             } else if (maltc != null) {
-                jdbc.update("EXEC sp_SuaLopTinChi ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
-                        maltc, nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), sosvtoithieu, sosvtoida,
-                        huylop ? 1 : 0,
-                        dbBatdau, dbKetthuc, dbHethan, lydo);
+                jdbc.update("EXEC sp_SuaLopTinChi ?, ?, ?, ?, ?, ?, ?, ?",
+                        maltc, nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), sosvtoithieu,
+                        huylop ? 1 : 0);
                 ra.addFlashAttribute("success", "Cập nhật lớp tín chỉ thành công!");
             }
         } catch (Exception e) {
