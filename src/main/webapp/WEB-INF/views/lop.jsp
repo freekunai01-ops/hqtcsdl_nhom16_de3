@@ -47,7 +47,7 @@
                 <div class="stat-cards">
                     <div class="stat-card blue"><div class="stat-label">Tổng lớp</div><div class="stat-value">${totalLop}</div></div>
                     <div class="stat-card green"><div class="stat-label">Đang học</div><div class="stat-value">${dangHoc}</div></div>
-                    <div class="stat-card gray"><div class="stat-label">Đã tốt nghiệp</div><div class="stat-value">${daTotNghiep}</div></div>
+                    <div class="stat-card gray"><div class="stat-label">Khóa đã kết thúc</div><div class="stat-value">${daTotNghiep}</div></div>
                     <div class="stat-card orange"><div class="stat-label">Sinh viên lớp chọn</div><div class="stat-value" id="statSiSo">—</div></div>
                 </div>
 
@@ -78,7 +78,7 @@
                                 <div class="filter-tabs">
                                     <div class="filter-tab active" data-filter="all" onclick="filterLopByStatus('all',this)">Tất cả</div>
                                     <div class="filter-tab" data-filter="danghoc" onclick="filterLopByStatus('danghoc',this)">Đang học</div>
-                                    <div class="filter-tab" data-filter="totnghiep" onclick="filterLopByStatus('totnghiep',this)">Đã tốt nghiệp</div>
+                                    <div class="filter-tab" data-filter="totnghiep" onclick="filterLopByStatus('totnghiep',this)">Khóa đã kết thúc</div>
                                 </div>
                                 <div class="filter-hint"><i class="fas fa-info-circle"></i> Có SV: không xóa &nbsp;|&nbsp; <i class="fas fa-graduation-cap"></i> Tốt nghiệp: vẫn hiện</div>
                             </div>
@@ -102,7 +102,7 @@
                                                 <td data-col="KHOAHOC">${l.KHOAHOC}</td>
                                                 <td data-col="MAKHOA">${l.MAKHOA}</td>
                                                 <td style="text-align:center;font-weight:bold;"><c:choose><c:when test="${l.SISO > 0}"><span style="color:#2563eb">${l.SISO}</span></c:when><c:otherwise><span style="color:#94a3b8">${l.SISO}</span></c:otherwise></c:choose></td>
-                                                <td><c:choose><c:when test="${l.TOTNGHIEP == 1}"><span class="badge-status badge-totnghiep">Đã tốt nghiệp</span></c:when><c:otherwise><span class="badge-status badge-danghoc">Đang học</span></c:otherwise></c:choose></td>
+                                                <td><c:choose><c:when test="${l.TOTNGHIEP == 1}"><span class="badge-status badge-totnghiep">Khóa đã kết thúc</span></c:when><c:otherwise><span class="badge-status badge-danghoc">Đang học</span></c:otherwise></c:choose></td>
                                             </tr>
                                         </c:forEach>
                                     </tbody>
@@ -123,7 +123,7 @@
                 </form>
             </div>
             <div class="form-window-status">
-                <span>Tổng số: ${totalLop} lớp | Đang học: ${dangHoc} | Đã tốt nghiệp: ${daTotNghiep}</span>
+                <span>Tổng số: ${totalLop} lớp | Đang học: ${dangHoc} | Khóa đã kết thúc: ${daTotNghiep}</span>
                 <span id="selectedLopStatus">Đã chọn: Chưa chọn</span>
             </div>
         </div>
@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('statSiSo').textContent = siso;
             var ip = document.getElementById('lopInfoPanel'); ip.style.display = '';
             document.getElementById('infoTrangThai').innerHTML = tn === 1
-                ? '<span class="badge-status badge-totnghiep">Đã tốt nghiệp</span>'
+                ? '<span class="badge-status badge-totnghiep">Khóa đã kết thúc</span>'
                 : '<span class="badge-status badge-danghoc">Đang học</span>';
             document.getElementById('infoNamKT').textContent = kh.length >= 9 ? kh.substring(5, 9) : '—';
             document.getElementById('infoSiSo').textContent = siso;
@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 document.getElementById('statSiSo').textContent = siso;
                 var ip = document.getElementById('lopInfoPanel'); ip.style.display = '';
                 document.getElementById('infoTrangThai').innerHTML = tn === 1
-                    ? '<span class="badge-status badge-totnghiep">Đã tốt nghiệp</span>'
+                    ? '<span class="badge-status badge-totnghiep">Khóa đã kết thúc</span>'
                     : '<span class="badge-status badge-danghoc">Đang học</span>';
                 document.getElementById('infoNamKT').textContent = kh.length >= 9 ? kh.substring(5, 9) : '—';
                 document.getElementById('infoSiSo').textContent = siso;

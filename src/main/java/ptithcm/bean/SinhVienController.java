@@ -64,15 +64,27 @@ public class SinhVienController {
          // Load danh sách SV
          if (malop != null && !malop.isEmpty()) {
              List<Map<String, Object>> dssv = jdbc.queryForList(
-                     "SELECT * FROM SINHVIEN WHERE MALOP=? ORDER BY MASV ASC", malop.trim());
+                     "SELECT SV.*, L.KHOAHOC FROM SINHVIEN SV JOIN LOP L ON SV.MALOP = L.MALOP " +
+                     "WHERE SV.MALOP=? ORDER BY SV.MASV ASC", malop.trim());
              
-             // Thêm LUOT_DK cho mỗi SV (an toàn)
+             // Thêm LUOT_DK và TOTNGHIEP cho mỗi SV (an toàn)
+             int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
              for (Map<String, Object> sv : dssv) {
                  try {
                      int dk = jdbc.queryForObject("SELECT COUNT(*) FROM DANGKY WHERE MASV=?",
                          Integer.class, sv.get("MASV"));
                      sv.put("LUOT_DK", dk);
                  } catch (Exception e) { sv.put("LUOT_DK", 0); }
+                 
+                 String kh = sv.get("KHOAHOC") != null ? sv.get("KHOAHOC").toString().trim() : "";
+                 int tn = 0;
+                 if (kh.length() >= 9) {
+                     try {
+                         int endY = Integer.parseInt(kh.substring(5, 9));
+                         if (endY <= currentYear) tn = 1;
+                     } catch (Exception e) {}
+                 }
+                 sv.put("TOTNGHIEP", tn);
              }
  
              model.addAttribute("dssv", dssv);

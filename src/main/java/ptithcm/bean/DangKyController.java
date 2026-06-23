@@ -55,8 +55,22 @@ public class DangKyController {
             String selectedLopHC = (String) session.getAttribute("selectedLopHC");
             if (selectedLopHC != null && !selectedLopHC.isEmpty()) {
                 List<Map<String, Object>> dsSvLop = jdbc.queryForList(
-                    "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC FROM SINHVIEN SV " +
+                    "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC, L.KHOAHOC " +
+                    "FROM SINHVIEN SV JOIN LOP L ON SV.MALOP=L.MALOP " +
                     "WHERE SV.MALOP=? ORDER BY SV.TEN, SV.HO", selectedLopHC);
+                
+                int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+                for (Map<String, Object> sv : dsSvLop) {
+                    String kh = sv.get("KHOAHOC") != null ? sv.get("KHOAHOC").toString().trim() : "";
+                    int totNghiep = 0;
+                    if (kh.length() >= 9) {
+                        try {
+                            int endY = Integer.parseInt(kh.substring(5, 9));
+                            if (endY <= currentYear) totNghiep = 1;
+                        } catch (Exception e) {}
+                    }
+                    sv.put("TOTNGHIEP", totNghiep);
+                }
                 model.addAttribute("dsSvLop", dsSvLop);
                 model.addAttribute("selectedLopHC", selectedLopHC);
             }
@@ -76,10 +90,21 @@ public class DangKyController {
 
         // Thông tin SV đang chọn
         List<Map<String, Object>> svInfoList = jdbc.queryForList(
-            "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC, L.TENLOP, L.MAKHOA " +
+            "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC, L.TENLOP, L.MAKHOA, L.KHOAHOC " +
             "FROM SINHVIEN SV JOIN LOP L ON SV.MALOP=L.MALOP WHERE SV.MASV=?", masv);
         if (!svInfoList.isEmpty()) {
-            model.addAttribute("svInfo", svInfoList.get(0));
+            Map<String, Object> svInfo = svInfoList.get(0);
+            String kh = svInfo.get("KHOAHOC") != null ? svInfo.get("KHOAHOC").toString().trim() : "";
+            int totNghiep = 0;
+            if (kh.length() >= 9) {
+                try {
+                    int endY = Integer.parseInt(kh.substring(5, 9));
+                    int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+                    if (endY <= currentYear) totNghiep = 1;
+                } catch (Exception e) {}
+            }
+            svInfo.put("TOTNGHIEP", totNghiep);
+            model.addAttribute("svInfo", svInfo);
         } else {
             return "dangky";
         }

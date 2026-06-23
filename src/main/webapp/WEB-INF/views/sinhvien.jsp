@@ -11,7 +11,7 @@
     <style>
         .stat-cards{display:flex;gap:10px;margin-bottom:12px}.stat-card{flex:1;padding:10px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#fff}.stat-card .stat-label{font-size:11px;color:#64748b;margin-bottom:2px}.stat-card .stat-value{font-size:22px;font-weight:bold}.stat-card.blue .stat-value{color:#2563eb}.stat-card.green .stat-value{color:#16a34a}.stat-card.pink .stat-value{color:#ec4899}.stat-card.red .stat-value{color:#dc2626}
         .filter-tabs{display:flex;gap:0;margin-bottom:8px}.filter-tab{padding:5px 14px;font-size:12px;font-weight:bold;cursor:pointer;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;transition:all .15s}.filter-tab:first-child{border-radius:4px 0 0 4px}.filter-tab:last-child{border-radius:0 4px 4px 0}.filter-tab.active{background:#2563eb;color:#fff;border-color:#2563eb}.filter-tab:hover:not(.active){background:#e2e8f0}
-        .badge-status{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:bold;white-space:nowrap}.badge-danghoc{background:#dcfce7;color:#166534;border:1px solid #86efac}.badge-nghihoc{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}
+        .badge-status{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:bold;white-space:nowrap}.badge-danghoc{background:#dcfce7;color:#166534;border:1px solid #86efac}.badge-nghihoc{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}.badge-totnghiep{background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db}
         .filter-hint{font-size:11px;color:#94a3b8;margin-left:auto;display:flex;align-items:center;gap:4px}
         .subform-grid{display:flex;gap:12px}.subform-left{flex:0 0 320px}.subform-right{flex:1}
     </style>
@@ -122,14 +122,14 @@
                                     </tr></thead>
                                     <tbody>
                                         <c:forEach items="${dssv}" var="sv">
-                                            <tr data-danghihoc="${sv.DANGHIHOC}" data-luotdk="${sv.LUOT_DK}"
+                                            <tr data-danghihoc="${sv.DANGHIHOC}" data-luotdk="${sv.LUOT_DK}" data-totnghiep="${sv.TOTNGHIEP}"
                                                 class="${sv.MASV.trim() == selectedMasv ? 'selected' : ''}">
                                                 <td data-col="MASV">${sv.MASV}</td>
                                                 <td>${sv.HO} ${sv.TEN}<span style="display:none" data-col="HO">${sv.HO}</span><span style="display:none" data-col="TEN">${sv.TEN}</span></td>
                                                 <td data-col="PHAI">${sv.PHAI == true ? 'Nữ' : 'Nam'}</td>
                                                 <td data-col="NGAYSINH">${sv.NGAYSINH}</td>
                                                 <td style="text-align:center;font-weight:bold;"><c:choose><c:when test="${sv.LUOT_DK > 0}"><span style="color:#2563eb">${sv.LUOT_DK}</span></c:when><c:otherwise><span style="color:#94a3b8">0</span></c:otherwise></c:choose></td>
-                                                <td><c:choose><c:when test="${sv.DANGHIHOC == true}"><span class="badge-status badge-nghihoc">Nghỉ học</span></c:when><c:otherwise><span class="badge-status badge-danghoc">Đang học</span></c:otherwise></c:choose></td>
+                                                <td><c:choose><c:when test="${sv.DANGHIHOC == true}"><span class="badge-status badge-nghihoc">Nghỉ học</span></c:when><c:when test="${sv.TOTNGHIEP == 1}"><span class="badge-status badge-totnghiep">Đã tốt nghiệp</span></c:when><c:otherwise><span class="badge-status badge-danghoc">Đang học</span></c:otherwise></c:choose></td>
                                                 <td style="display:none" data-col="DIACHI">${sv.DIACHI}</td>
                                             </tr>
                                         </c:forEach>
@@ -182,6 +182,16 @@
 </div>
 <script src="${pageContext.request.contextPath}/js/app.js?v=16"></script>
 <script>
+var isLopGraduated = false;
+var lopKhoaHoc = '${lopKhoaHoc}';
+if (lopKhoaHoc && lopKhoaHoc.length >= 9) {
+    try {
+        var endY = parseInt(lopKhoaHoc.substring(5, 9));
+        var curY = new Date().getFullYear();
+        if (endY <= curY) isLopGraduated = true;
+    } catch(e){}
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     var table = document.getElementById('svTable'); if (!table) return;
     var rows = table.querySelectorAll('tbody tr');
@@ -198,14 +208,36 @@ document.addEventListener("DOMContentLoaded", function() {
             var dnh = this.getAttribute('data-danghihoc');
             var cb = document.getElementById('svDangNghiHoc'); var badge = document.getElementById('svBadge');
             if(cb) cb.checked = (dnh==='true'||dnh==='1');
-            if(badge) { if(dnh==='true'||dnh==='1'){badge.className='badge-status badge-nghihoc';badge.textContent='Nghỉ học';}else{badge.className='badge-status badge-danghoc';badge.textContent='Đang học';} }
+            if(badge) {
+                if(dnh==='true'||dnh==='1'){
+                    badge.className='badge-status badge-nghihoc';
+                    badge.textContent='Nghỉ học';
+                }else if(isLopGraduated){
+                    badge.className='badge-status badge-totnghiep';
+                    badge.textContent='Đã tốt nghiệp';
+                }else{
+                    badge.className='badge-status badge-danghoc';
+                    badge.textContent='Đang học';
+                }
+            }
             document.getElementById('svAction').value = 'update'; document.getElementById('svPK').readOnly = true;
         });
     });
     var cb = document.getElementById('svDangNghiHoc');
     if(cb) cb.addEventListener('change', function() {
         var b = document.getElementById('svBadge');
-        if(b) { if(this.checked){b.className='badge-status badge-nghihoc';b.textContent='Nghỉ học';}else{b.className='badge-status badge-danghoc';b.textContent='Đang học';} }
+        if(b) {
+            if(this.checked){
+                b.className='badge-status badge-nghihoc';
+                b.textContent='Nghỉ học';
+            }else if(isLopGraduated){
+                b.className='badge-status badge-totnghiep';
+                b.textContent='Đã tốt nghiệp';
+            }else{
+                b.className='badge-status badge-danghoc';
+                b.textContent='Đang học';
+            }
+        }
     });
 
     var activeMasv = '${selectedMasv}';
@@ -237,6 +269,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (dnh === 'true') {
                         b.className = 'badge-status badge-nghihoc';
                         b.textContent = 'Nghỉ học';
+                    } else if (isLopGraduated) {
+                        b.className = 'badge-status badge-totnghiep';
+                        b.textContent = 'Đã tốt nghiệp';
                     } else {
                         b.className = 'badge-status badge-danghoc';
                         b.textContent = 'Đang học';
@@ -254,7 +289,16 @@ function btnThemSV() {
     ['ho','ten','diachi','ngaysinh'].forEach(function(n){var e=document.querySelector('input[name="'+n+'"]');if(e)e.value='';});
     document.getElementById('phaiNam').checked=true;
     var cb=document.getElementById('svDangNghiHoc');if(cb)cb.checked=false;
-    var b=document.getElementById('svBadge');if(b){b.className='badge-status badge-danghoc';b.textContent='Đang học';}
+    var b=document.getElementById('svBadge');
+    if(b){
+        if (isLopGraduated) {
+            b.className='badge-status badge-totnghiep';
+            b.textContent='Đã tốt nghiệp';
+        } else {
+            b.className='badge-status badge-danghoc';
+            b.textContent='Đang học';
+        }
+    }
     document.getElementById('svAction').value='add';
     document.querySelectorAll('#svTable tbody tr').forEach(function(r){r.classList.remove('selected');});
 }

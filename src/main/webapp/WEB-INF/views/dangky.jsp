@@ -67,7 +67,13 @@
 <c:forEach items="${dsSvLop}" var="sv">
 <div class="sv-item ${sv.MASV == svInfo.MASV ? 'active' : ''}" data-masv="${sv.MASV}" data-name="${sv.HO} ${sv.TEN}" onclick="pickSV('${sv.MASV}')">
 <span class="sv-name">${sv.MASV} — ${sv.HO} ${sv.TEN}</span>
-<span class="sv-status">${sv.DANGHIHOC == true ? '❌ Nghỉ' : '✔ Đang học'}</span>
+<span class="sv-status">
+<c:choose>
+<c:when test="${sv.DANGHIHOC == true}">❌ Nghỉ</c:when>
+<c:when test="${sv.TOTNGHIEP == 1}">🎓 Tốt nghiệp</c:when>
+<c:otherwise>✔ Đang học</c:otherwise>
+</c:choose>
+</span>
 </div>
 </c:forEach>
 </div>
@@ -85,7 +91,7 @@
 <div><span style="color:#64748b;">Khoa:</span> <strong>${svInfo.MAKHOA}</strong></div>
 </div>
 <div style="margin-top:8px;">
-<span class="stat-mini">Trạng thái: <strong>${svInfo.DANGHIHOC == true ? 'Nghỉ học' : 'Đang học'}</strong></span>
+<span class="stat-mini">Trạng thái: <strong><c:choose><c:when test="${svInfo.DANGHIHOC == true}">Nghỉ học</c:when><c:when test="${svInfo.TOTNGHIEP == 1}">Đã tốt nghiệp</c:when><c:otherwise>Đang học</c:otherwise></c:choose></strong></span>
 <span class="stat-mini">HK ${hocky}/${nienkhoa}: <strong>${daDangKyHK} môn</strong></span>
 <span class="stat-mini">Tổng LTC: <strong>${fn:length(myLTC)} lớp</strong></span>
 </div>
@@ -107,7 +113,7 @@
 <div><span style="color:#64748b;">Khoa:</span> <strong>${svInfo.MAKHOA}</strong></div>
 </div>
 <div style="margin-top:8px;">
-<span class="stat-mini">Trạng thái: <strong>Đang học</strong></span>
+<span class="stat-mini">Trạng thái: <strong><c:choose><c:when test="${svInfo.DANGHIHOC == true}">Nghỉ học</c:when><c:when test="${svInfo.TOTNGHIEP == 1}">Đã tốt nghiệp</c:when><c:otherwise>Đang học</c:otherwise></c:choose></strong></span>
 <span class="stat-mini">HK ${hocky}/${nienkhoa}: <strong>${daDangKyHK} môn</strong></span>
 <span class="stat-mini">Tổng LTC: <strong>${fn:length(myLTC)} lớp</strong></span>
 </div>
