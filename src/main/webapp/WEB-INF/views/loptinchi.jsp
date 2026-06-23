@@ -171,38 +171,6 @@
                                                <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
                                     </div>
                                 </div>
-                                <div class="pane-row">
-                                    <span class="pane-label" style="width:90px;">SV tối đa:</span>
-                                    <div class="pane-input-wrapper">
-                                        <input type="number" name="sosvtoida" data-field="SOSVTOIDA" class="pane-input" min="1" value="40" required
-                                               <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <%-- Ngày ĐK --%>
-                            <div style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;">
-                                <div class="pane-row">
-                                    <span class="pane-label" style="width:90px;">Bắt đầu ĐK:</span>
-                                    <div class="pane-input-wrapper">
-                                        <input type="date" name="ngaybatdauDk" data-field="NGAYBATDAU_DK" class="pane-input"
-                                               <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
-                                    </div>
-                                </div>
-                                <div class="pane-row">
-                                    <span class="pane-label" style="width:90px;">Kết thúc ĐK:</span>
-                                    <div class="pane-input-wrapper">
-                                        <input type="date" name="ngayketthucDk" data-field="NGAYKETTHUC_DK" class="pane-input"
-                                               <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
-                                    </div>
-                                </div>
-                                <div class="pane-row">
-                                    <span class="pane-label" style="width:90px;">Hạn hủy:</span>
-                                    <div class="pane-input-wrapper">
-                                        <input type="date" name="ngayhethanHuy" data-field="NGAYHETHAN_HUY" class="pane-input"
-                                               <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
-                                    </div>
-                                </div>
                             </div>
 
                             <%-- Hủy lớp --%>
@@ -211,16 +179,7 @@
                                     <input type="checkbox" id="ltcHuylop" name="huylop" value="true"
                                            <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>> Hủy lớp
                                 </label>
-                                <div class="pane-row" style="margin-top:6px;">
-                                    <span class="pane-label" style="width:90px;">Lý do hủy:</span>
-                                    <div class="pane-input-wrapper">
-                                        <input type="text" name="lydohuy" data-field="LYDOHUY" class="pane-input"
-                                               placeholder="Ví dụ: Không đủ sĩ số tối thiểu"
-                                               <c:if test="${sessionScope.nhomQuyen != 'PGV'}">disabled</c:if>>
-                                    </div>
-                                </div>
                             </div>
-                        </div>
 
                         <%-- ===== CỘT PHẢI: Danh sách gọn ===== --%>
                         <div class="form-right-pane">
@@ -238,18 +197,14 @@
                                         <th data-sort-key="MAMH" data-sort-col="3">Môn</th>
                                         <th data-sort-key="NHOM" data-sort-col="4">Nhóm</th>
                                         <th data-sort-key="MAGV" data-sort-col="5">Giảng viên</th>
-                                        <th data-sort-key="SOSVTOIDA" data-sort-col="6" title="Sĩ số (Đã ĐK / Tối đa)">Sĩ số (Đã ĐK/Tối đa)</th>
+                                        <th data-sort-key="SOSVTOITHIEU" data-sort-col="6" title="Sĩ số (Đã ĐK / Tối thiểu)">Sĩ số (Đã ĐK/Tối thiểu)</th>
                                         <th data-sort-key="HUYLOP_TXT" data-sort-col="7">Trạng thái</th>
                                     </tr></thead>
                                     <tbody>
                                         <c:forEach items="${dsltc}" var="l">
                                             <tr onclick="selectLTC(this)" data-maltc="${l.MALTC}" data-huylop="${l.HUYLOP}"
-                                                data-nienkhoa="${l.NIENKHOA}" data-hocky="${l.HOCKY}"
-                                                data-batdau="<fmt:formatDate value='${l.NGAYBATDAU_DK}' pattern='yyyy-MM-dd'/>"
-                                                data-ketthuc="<fmt:formatDate value='${l.NGAYKETTHUC_DK}' pattern='yyyy-MM-dd'/>"
-                                                data-hethan="<fmt:formatDate value='${l.NGAYHETHAN_HUY}' pattern='yyyy-MM-dd'/>"
-                                                data-lydohuy="${l.LYDOHUY}"
-                                                class="${l.MALTC == selectedMaltc ? 'selected' : ''}">
+                                                 data-nienkhoa="${l.NIENKHOA}" data-hocky="${l.HOCKY}"
+                                                 class="${l.MALTC == selectedMaltc ? 'selected' : ''}">
                                                 <td data-col="MALTC">${l.MALTC}</td>
                                                 <td data-col="NIENKHOA">${l.NIENKHOA}</td>
                                                 <td data-col="HOCKY">${l.HOCKY}</td>
@@ -257,8 +212,7 @@
                                                 <td data-col="NHOM">${l.NHOM}</td>
                                                 <td data-col="MAGV">${l.MAGV}</td>
                                                 <td data-col="SOSVTOITHIEU" style="display:none">${l.SOSVTOITHIEU}</td>
-                                                <td data-col="SOSVTOIDA" style="display:none">${l.SOSVTOIDA}</td>
-                                                <td data-col="SOSVDK_DISPLAY">${l.SOSVDK} / ${l.SOSVTOIDA} <span style="font-size:11px;color:#718096;">(Min: ${l.SOSVTOITHIEU})</span></td>
+                                                <td data-col="SOSVDK_DISPLAY">${l.SOSVDK} / ${l.SOSVTOITHIEU} <span style="font-size:11px;color:#718096;">(Tối thiểu)</span></td>
                                                 <td data-col="HUYLOP_TXT">
                                                     <c:choose>
                                                         <c:when test="${l.HUYLOP == true}">
@@ -278,9 +232,6 @@
                                                                 </c:when>
                                                                 <c:otherwise>
                                                                     <c:choose>
-                                                                        <c:when test="${l.SOSVDK >= l.SOSVTOIDA}">
-                                                                            <span class="badge-status day"><i class="fas fa-users-slash"></i> Đã đầy</span>
-                                                                        </c:when>
                                                                         <c:when test="${l.SOSVDK < l.SOSVTOITHIEU}">
                                                                             <span class="badge-status chua-min"><i class="fas fa-users"></i> Thiếu Min</span>
                                                                         </c:when>
@@ -295,23 +246,13 @@
                                                 </td>
                                                 <%-- Ẩn: dùng để điền form --%>
                                                 <td data-col="MAKHOA" style="display:none">${l.MAKHOA}</td>
-                                                <td data-col="NGAYBATDAU_DK" style="display:none"><fmt:formatDate value="${l.NGAYBATDAU_DK}" pattern="yyyy-MM-dd"/></td>
-                                                <td data-col="NGAYKETTHUC_DK" style="display:none"><fmt:formatDate value="${l.NGAYKETTHUC_DK}" pattern="yyyy-MM-dd"/></td>
-                                                <td data-col="NGAYHETHAN_HUY" style="display:none"><fmt:formatDate value="${l.NGAYHETHAN_HUY}" pattern="yyyy-MM-dd"/></td>
-                                                <td data-col="LYDOHUY" style="display:none">${l.LYDOHUY}</td>
                                             </tr>
                                         </c:forEach>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <%-- Detail bar — hiện khi chọn dòng --%>
-                            <div id="ltcDetailBar" class="ltc-detail-bar">
-                                <span><i class="fas fa-calendar-alt"></i> Bắt đầu ĐK: <strong id="dBarBatdau">—</strong></span>
-                                <span><i class="fas fa-calendar-check"></i> Kết thúc ĐK: <strong id="dBarKetthuc">—</strong></span>
-                                <span><i class="fas fa-calendar-times"></i> Hạn hủy: <strong id="dBarHethan">—</strong></span>
-                                <span id="dBarLydoWrapper"><i class="fas fa-comment-alt"></i> Lý do hủy: <strong id="dBarLydo">—</strong></span>
-                            </div>
+
                             <span id="ltcTableFilterCount" class="table-filter-count"></span>
                         </div>
                     </div>
@@ -350,10 +291,6 @@ function selectLTC(row) {
 
         var maltc  = row.getAttribute('data-maltc');
         var huylop = row.getAttribute('data-huylop') === 'true';
-        var batdau = row.getAttribute('data-batdau')  || '';
-        var ketthuc= row.getAttribute('data-ketthuc') || '';
-        var hethan = row.getAttribute('data-hethan')  || '';
-        var lydo   = row.getAttribute('data-lydohuy') || '';
 
         var disp = document.getElementById('ltcMaltcDisplay');
         if (disp) disp.value = maltc;
@@ -372,17 +309,6 @@ function selectLTC(row) {
             var val = cell.textContent.trim();
             el.value = val;   // works for both <input> and <select>
         });
-
-        // Detail bar
-        var bar = document.getElementById('ltcDetailBar');
-        if (bar) {
-            bar.classList.add('show');
-            var d1 = document.getElementById('dBarBatdau');  if(d1) d1.textContent = batdau  || '(Chưa đặt)';
-            var d2 = document.getElementById('dBarKetthuc'); if(d2) d2.textContent = ketthuc || '(Chưa đặt)';
-            var d3 = document.getElementById('dBarHethan');  if(d3) d3.textContent = hethan  || '(Chưa đặt)';
-            var d4 = document.getElementById('dBarLydo');    if(d4) d4.textContent = lydo    || '—';
-            var d5 = document.getElementById('dBarLydoWrapper'); if(d5) d5.style.display = huylop ? '' : 'none';
-        }
     } catch(err) {
         alert("Loi trong selectLTC: " + err.message);
     }
@@ -411,27 +337,9 @@ function btnThemOpen() {
         var minEl = document.querySelector('input[name="sosvtoithieu"]');
         if (minEl) minEl.value = '20';
         
-        var maxEl = document.querySelector('input[name="sosvtoida"]');
-        if (maxEl) maxEl.value = '40';
-        
-        var bdEl = document.querySelector('input[name="ngaybatdauDk"]');
-        if (bdEl) bdEl.value = '';
-        
-        var ktEl = document.querySelector('input[name="ngayketthucDk"]');
-        if (ktEl) ktEl.value = '';
-        
-        var hhEl = document.querySelector('input[name="ngayhethanHuy"]');
-        if (hhEl) hhEl.value = '';
-        
-        var lydoEl = document.querySelector('input[name="lydohuy"]');
-        if (lydoEl) lydoEl.value = '';
-
         document.querySelectorAll('#ltcTable tbody tr').forEach(function(r) { 
             r.classList.remove('selected'); 
         });
-        
-        var detailBar = document.getElementById('ltcDetailBar');
-        if (detailBar) detailBar.classList.remove('show');
     } catch(err) {
         alert("Loi trong btnThemOpen: " + err.message);
     }
@@ -490,20 +398,8 @@ window.addEventListener('load', function() {
             if (nhomEl && (parseInt(nhomEl.value) < 1 || !nhomEl.value)) errors.push('Nhom phai >= 1!');
 
             var minEl = form.querySelector('input[name="sosvtoithieu"]');
-            var maxEl = form.querySelector('input[name="sosvtoida"]');
-            var minV = parseInt((minEl||{}).value||'0'); var maxV = parseInt((maxEl||{}).value||'0');
+            var minV = parseInt((minEl||{}).value||'0');
             if (minV <= 0) errors.push('Si so toi thieu phai > 0!');
-            if (maxV < minV) errors.push('Si so toi da phai >= si so toi thieu!');
-
-            var bd = (form.querySelector('input[name="ngaybatdauDk"]')||{}).value||'';
-            var kt = (form.querySelector('input[name="ngayketthucDk"]')||{}).value||'';
-            var hh = (form.querySelector('input[name="ngayhethanHuy"]')||{}).value||'';
-            if (bd && kt && new Date(bd) > new Date(kt)) errors.push('Ngay bat dau DK phai truoc ngay ket thuc DK!');
-            if (kt && hh && new Date(kt) > new Date(hh)) errors.push('Ngay ket thuc DK phai truoc han huy!');
-
-            var huyEl = document.getElementById('ltcHuylop');
-            var lydoEl = form.querySelector('input[name="lydohuy"]');
-            if (huyEl && huyEl.checked && lydoEl && !lydoEl.value.trim()) errors.push('Huy lop phai nhap ly do!');
 
             if (errors.length > 0) {
                 alert('LOI:\n- ' + errors.join('\n- '));

@@ -124,9 +124,8 @@ public class DangKyController {
 
         // DS lớp tín chỉ chưa hủy
         List<Map<String, Object>> dsltc = jdbc.queryForList(
-            "SELECT LTC.MALTC, MH.MAMH, MH.TENMH, LTC.NHOM, LTC.SOSVTOITHIEU, LTC.SOSVTOIDA, " +
+            "SELECT LTC.MALTC, MH.MAMH, MH.TENMH, LTC.NHOM, LTC.SOSVTOITHIEU, " +
             "MH.SOTIET_LT, MH.SOTIET_TH, " +
-            "LTC.NGAYBATDAU_DK, LTC.NGAYKETTHUC_DK, LTC.NGAYHETHAN_HUY, " +
             "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
             "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK " +
             "FROM LOPTINCHI LTC " +
@@ -265,37 +264,14 @@ public class DangKyController {
                 return "redirect:/dangky";
             }
 
-            int registered = 0, skippedFull = 0, skippedDeadline = 0;
-            java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
-
             if (selectedLtcs != null) {
                 for (int maltc : selectedLtcs) {
-                    Map<String, Object> ltcInfo = jdbc.queryForMap(
-                        "SELECT SOSVTOIDA, NGAYBATDAU_DK, NGAYKETTHUC_DK FROM LOPTINCHI WHERE MALTC=?", maltc);
-                    java.sql.Date batdau = (java.sql.Date) ltcInfo.get("NGAYBATDAU_DK");
-                    java.sql.Date ketthuc = (java.sql.Date) ltcInfo.get("NGAYKETTHUC_DK");
-                    if (batdau != null && today.before(batdau)) { skippedDeadline++; continue; }
-                    if (ketthuc != null && today.after(ketthuc)) { skippedDeadline++; continue; }
-
-                    int existCount = jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM DANGKY WHERE MALTC=? AND MASV=?", Integer.class, maltc, masv);
-                    if (existCount > 0) {
-                        jdbc.update("EXEC sp_DangKyLTC ?, ?", maltc, masv);
-                    } else {
-                        Integer sosvToida = (Integer) ltcInfo.get("SOSVTOIDA");
-                        int currentDK = jdbc.queryForObject(
-                            "SELECT COUNT(*) FROM DANGKY WHERE MALTC=? AND (HUYDANGKY=0 OR HUYDANGKY IS NULL)",
-                            Integer.class, maltc);
-                        if (sosvToida != null && currentDK >= sosvToida) { skippedFull++; continue; }
-                        jdbc.update("EXEC sp_DangKyLTC ?, ?", maltc, masv);
-                    }
+                    jdbc.update("EXEC sp_DangKyLTC ?, ?", maltc, masv);
                     registered++;
                 }
             }
 
             String msg = "Đã đăng ký " + registered + " lớp tín chỉ thành công!";
-            if (skippedFull > 0) msg += " (Bỏ qua " + skippedFull + " lớp đã đầy)";
-            if (skippedDeadline > 0) msg += " (Bỏ qua " + skippedDeadline + " lớp ngoài hạn ĐK)";
             ra.addFlashAttribute("success", msg);
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Lỗi lưu đăng ký: " + e.getMessage());
@@ -316,15 +292,6 @@ public class DangKyController {
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
-            java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
-            List<Map<String, Object>> ltcRows = jdbc.queryForList("SELECT NGAYHETHAN_HUY FROM LOPTINCHI WHERE MALTC=?", maltc);
-            if (!ltcRows.isEmpty() && ltcRows.get(0).get("NGAYHETHAN_HUY") != null) {
-                java.sql.Date hanHuy = (java.sql.Date) ltcRows.get(0).get("NGAYHETHAN_HUY");
-                if (today.after(hanHuy)) {
-                    ra.addFlashAttribute("error", "Không thể hủy — đã quá hạn hủy đăng ký (" + hanHuy + ")!");
-                    return "redirect:/dangky";
-                }
-            }
             List<Map<String, Object>> rows = jdbc.queryForList("SELECT DIEM_CK FROM DANGKY WHERE MALTC=? AND MASV=?", maltc, masv);
             if (!rows.isEmpty() && rows.get(0).get("DIEM_CK") != null) {
                 ra.addFlashAttribute("error", "Không thể hủy — môn này đã có điểm cuối kỳ!");
