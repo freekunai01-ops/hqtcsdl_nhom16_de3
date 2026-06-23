@@ -18,6 +18,9 @@ tmp/
 .metadata/
 .recommenders/
 
-# OS files
 Thumbs.db
 Desktop.ini
+
+# IDE/Tool specific
+.claude/
+.gemini/

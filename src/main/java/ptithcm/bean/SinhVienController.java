@@ -26,70 +26,53 @@ public class SinhVienController {
             return "redirect:/home";
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
-        List<Map<String, Object>> dslop;
-        
-        // Danh sách lớp (lọc theo maKhoa trong session cho cả PGV và KHOA)
+
+        // sp_DsLop trả về MALOP, TENLOP, KHOAHOC, MAKHOA, TENKHOA, SISO
         String maKhoa = (String) session.getAttribute("maKhoa");
+        List<Map<String, Object>> dslop;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
-             dslop = jdbc.queryForList("SELECT MALOP, TENLOP, MAKHOA FROM LOP ORDER BY MALOP");
-         } else {
-              dslop = jdbc.queryForList("SELECT MALOP, TENLOP, MAKHOA FROM LOP WHERE MAKHOA=? ORDER BY MALOP", maKhoa);
-         }
- 
-         // Thêm SISO cho mỗi lớp (an toàn, try-catch từng lớp)
-         for (Map<String, Object> lop : dslop) {
-             try {
-                 int siso = jdbc.queryForObject("SELECT COUNT(*) FROM SINHVIEN WHERE MALOP=?",
-                     Integer.class, lop.get("MALOP"));
-                 lop.put("SISO", siso);
-             } catch (Exception e) { lop.put("SISO", 0); }
-         }
- 
-         // Fetch danh sách khoa cho bộ lọc
-         List<Map<String, Object>> dskhoa = jdbc.queryForList("SELECT MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA");
-         model.addAttribute("dskhoa", dskhoa);
-         model.addAttribute("dslop", dslop);
- 
-         // Tổng SV toàn hệ thống
-         try {
-             int totalSv = jdbc.queryForObject("SELECT COUNT(*) FROM SINHVIEN", Integer.class);
-             model.addAttribute("totalSv", totalSv);
-         } catch (Exception e) { model.addAttribute("totalSv", 0); }
- 
-         // Auto-select lớp đầu tiên nếu chưa chọn
-         if ((malop == null || malop.isEmpty()) && !dslop.isEmpty()) {
-             malop = dslop.get(0).get("MALOP").toString().trim();
-         }
- 
-         // Load danh sách SV
-         if (malop != null && !malop.isEmpty()) {
-             List<Map<String, Object>> dssv = jdbc.queryForList(
-                     "SELECT SV.*, L.KHOAHOC FROM SINHVIEN SV JOIN LOP L ON SV.MALOP = L.MALOP " +
-                     "WHERE SV.MALOP=? ORDER BY SV.MASV ASC", malop.trim());
-             
-             // Thêm LUOT_DK và TOTNGHIEP cho mỗi SV (an toàn)
-             int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-             for (Map<String, Object> sv : dssv) {
-                 try {
-                     int dk = jdbc.queryForObject("SELECT COUNT(*) FROM DANGKY WHERE MASV=?",
-                         Integer.class, sv.get("MASV"));
-                     sv.put("LUOT_DK", dk);
-                 } catch (Exception e) { sv.put("LUOT_DK", 0); }
-                 
-                 String kh = sv.get("KHOAHOC") != null ? sv.get("KHOAHOC").toString().trim() : "";
-                 int tn = 0;
-                 if (kh.length() >= 9) {
-                     try {
-                         int endY = Integer.parseInt(kh.substring(5, 9));
-                         if (endY <= currentYear) tn = 1;
-                     } catch (Exception e) {}
-                 }
-                 sv.put("TOTNGHIEP", tn);
-             }
- 
-             model.addAttribute("dssv", dssv);
-             model.addAttribute("selectedLop", malop.trim());
-             model.addAttribute("selectedMasv", masv != null ? masv.trim() : "");
+            dslop = jdbc.queryForList("EXEC sp_DsLop NULL");
+        } else {
+            dslop = jdbc.queryForList("EXEC sp_DsLop ?", maKhoa);
+        }
+
+        // Fetch danh sách khoa cho bộ lọc
+        List<Map<String, Object>> dskhoa = jdbc.queryForList("EXEC sp_DsKhoaDropdown");
+        model.addAttribute("dskhoa", dskhoa);
+        model.addAttribute("dslop", dslop);
+
+        // Tổng SV toàn hệ thống
+        try {
+            List<Map<String, Object>> tongRows = jdbc.queryForList("EXEC sp_TongSinhVien");
+            int totalSv = tongRows.isEmpty() ? 0 : ((Number) tongRows.get(0).get("TONG_SV")).intValue();
+            model.addAttribute("totalSv", totalSv);
+        } catch (Exception e) { model.addAttribute("totalSv", 0); }
+
+        // Auto-select lớp đầu tiên nếu chưa chọn
+        if ((malop == null || malop.isEmpty()) && !dslop.isEmpty()) {
+            malop = dslop.get(0).get("MALOP").toString().trim();
+        }
+
+        // Load danh sách SV — sp_DsSinhVienTheoLop trả về MASV, HO, TEN, ... KHOAHOC, LUOT_DK
+        if (malop != null && !malop.isEmpty()) {
+            List<Map<String, Object>> dssv = jdbc.queryForList("EXEC sp_DsSinhVienTheoLop ?", malop.trim());
+
+            int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+            for (Map<String, Object> sv : dssv) {
+                String kh = sv.get("KHOAHOC") != null ? sv.get("KHOAHOC").toString().trim() : "";
+                int tn = 0;
+                if (kh.length() >= 9) {
+                    try {
+                        int endY = Integer.parseInt(kh.substring(5, 9));
+                        if (endY <= currentYear) tn = 1;
+                    } catch (Exception e) {}
+                }
+                sv.put("TOTNGHIEP", tn);
+            }
+
+            model.addAttribute("dssv", dssv);
+            model.addAttribute("selectedLop", malop.trim());
+            model.addAttribute("selectedMasv", masv != null ? masv.trim() : "");
 
             // Stats
             int svInLop = dssv.size(), nam = 0, nu = 0, nghiHoc = 0;
@@ -104,14 +87,14 @@ public class SinhVienController {
             model.addAttribute("svNu", nu);
             model.addAttribute("svNghiHoc", nghiHoc);
 
-            // Thông tin lớp
-            try {
-                Map<String, Object> lopInfo = jdbc.queryForMap(
-                    "SELECT L.KHOAHOC, K.MAKHOA FROM LOP L JOIN KHOA K ON L.MAKHOA=K.MAKHOA WHERE L.MALOP=?",
-                    malop.trim());
-                model.addAttribute("lopKhoaHoc", lopInfo.get("KHOAHOC"));
-                model.addAttribute("lopMaKhoa", lopInfo.get("MAKHOA"));
-            } catch (Exception e) {}
+            // Thông tin lớp — lấy từ dslop đã có
+            for (Map<String, Object> lop : dslop) {
+                if (malop.trim().equals(lop.get("MALOP") != null ? lop.get("MALOP").toString().trim() : "")) {
+                    model.addAttribute("lopKhoaHoc", lop.get("KHOAHOC"));
+                    model.addAttribute("lopMaKhoa", lop.get("MAKHOA"));
+                    break;
+                }
+            }
         }
         return "sinhvien";
     }
@@ -192,9 +175,10 @@ public class SinhVienController {
             return "redirect:/home";
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
-        // Kiểm tra có đăng ký không
+        // Kiểm tra có đăng ký không qua sp_DemDangKyTheoSV
         try {
-            int dkCount = jdbc.queryForObject("SELECT COUNT(*) FROM DANGKY WHERE MASV=?", Integer.class, masv.trim());
+            List<Map<String, Object>> dkRows = jdbc.queryForList("EXEC sp_DemDangKyTheoSV ?", masv.trim());
+            int dkCount = dkRows.isEmpty() ? 0 : ((Number) dkRows.get(0).get("LUOT_DK")).intValue();
             if (dkCount > 0) {
                 ra.addFlashAttribute("error", "Không thể xóa SV " + masv.trim() + " vì đã có " + dkCount + " lượt đăng ký! Dùng 'Đang nghỉ học' thay vì xóa.");
                 return "redirect:/sinhvien?malop=" + malop.trim() + "&masv=" + masv.trim();

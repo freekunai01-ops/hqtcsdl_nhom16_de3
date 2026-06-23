@@ -26,21 +26,18 @@ public class GiangVienController {
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         String maKhoa = (String) session.getAttribute("maKhoa");
-        String baseQ = "SELECT G.*, K.TENKHOA FROM GIANGVIEN G JOIN KHOA K ON G.MAKHOA=K.MAKHOA ";
+        // sp_DsGiangVien trả về MAGV, HO, TEN, HOCVI, HOCHAM, CHUYENMON, MAKHOA, TENKHOA, SO_LTC
         List<Map<String, Object>> dsgv;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
-            dsgv = jdbc.queryForList(baseQ + "ORDER BY G.TEN, G.HO");
+            dsgv = jdbc.queryForList("EXEC sp_DsGiangVien NULL");
         } else {
-            dsgv = jdbc.queryForList(baseQ + "WHERE G.MAKHOA=? ORDER BY G.TEN, G.HO", maKhoa);
+            dsgv = jdbc.queryForList("EXEC sp_DsGiangVien ?", maKhoa);
         }
 
         int dangDay = 0, gsPgsTs = 0, chuaPC = 0;
         for (Map<String, Object> gv : dsgv) {
-            try {
-                int soLTC = jdbc.queryForObject("SELECT COUNT(*) FROM LOPTINCHI WHERE MAGV=?", Integer.class, gv.get("MAGV"));
-                gv.put("SO_LTC", soLTC);
-                if (soLTC > 0) dangDay++; else chuaPC++;
-            } catch (Exception e) { gv.put("SO_LTC", 0); chuaPC++; }
+            int soLTC = gv.get("SO_LTC") != null ? ((Number) gv.get("SO_LTC")).intValue() : 0;
+            if (soLTC > 0) dangDay++; else chuaPC++;
             String hv = gv.get("HOCVI") != null ? gv.get("HOCVI").toString().trim() : "";
             String hh = gv.get("HOCHAM") != null ? gv.get("HOCHAM").toString().trim() : "";
             if (hh.contains("GS") || hh.contains("PGS") || hv.contains("Tiến sĩ") || hv.contains("TS")) gsPgsTs++;
@@ -50,7 +47,7 @@ public class GiangVienController {
         model.addAttribute("dangDay", dangDay);
         model.addAttribute("gsPgsTs", gsPgsTs);
         model.addAttribute("chuaPC", chuaPC);
-        model.addAttribute("khoaList", jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
+        model.addAttribute("khoaList", jdbc.queryForList("EXEC sp_DsKhoaDropdown"));
         model.addAttribute("selectedMagv", magv != null ? magv.trim() : "");
         return "giangvien";
     }
@@ -79,8 +76,7 @@ public class GiangVienController {
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
             if ("add".equals(action)) {
-                int exists = jdbc.queryForObject("SELECT COUNT(*) FROM GIANGVIEN WHERE MAGV=?", Integer.class, magv.trim());
-                if (exists > 0) { ra.addFlashAttribute("error", "Mã GV '" + magv.trim() + "' đã tồn tại!"); return "redirect:/giangvien?magv=" + magv.trim(); }
+                // sp_ThemGiangVien kiểm tra trùng MAGV, raise error nếu trùng
                 jdbc.update("EXEC sp_ThemGiangVien ?,?,?,?,?,?,?",
                         magv.trim(), ho.trim(), ten.trim(), hocvi.trim(), hocham.trim(), chuyenmon.trim(), maKhoa.trim());
                 ra.addFlashAttribute("success", "Thêm giảng viên thành công!");
@@ -102,11 +98,16 @@ public class GiangVienController {
                          HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
+        // sp_XoaGiangVien tự kiểm tra LTC, raise error nếu còn LTC
+        // (Kiểm tra trước ở Java để hiển thị thông báo thân thiện)
         try {
-            int ltcCount = jdbc.queryForObject("SELECT COUNT(*) FROM LOPTINCHI WHERE MAGV=?", Integer.class, magv.trim());
-            if (ltcCount > 0) {
-                ra.addFlashAttribute("error", "Không thể xóa! GV '" + magv.trim() + "' đã phụ trách " + ltcCount + " lớp tín chỉ.");
-                return "redirect:/giangvien?magv=" + magv.trim();
+            List<Map<String, Object>> gvRows = jdbc.queryForList("EXEC sp_DsGiangVien ?", magv.trim());
+            if (!gvRows.isEmpty()) {
+                int ltcCount = gvRows.get(0).get("SO_LTC") != null ? ((Number) gvRows.get(0).get("SO_LTC")).intValue() : 0;
+                if (ltcCount > 0) {
+                    ra.addFlashAttribute("error", "Không thể xóa! GV '" + magv.trim() + "' đã phụ trách " + ltcCount + " lớp tín chỉ.");
+                    return "redirect:/giangvien?magv=" + magv.trim();
+                }
             }
         } catch (Exception e) {}
         try {

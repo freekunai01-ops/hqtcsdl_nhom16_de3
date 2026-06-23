@@ -27,42 +27,20 @@ public class LopTinChiController {
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         String maKhoa = (String) session.getAttribute("maKhoa");
+        // sp_DsLopTinChi trả về MALTC, NIENKHOA, HOCKY, MAMH, NHOM, MAGV, MAKHOA, SOSVTOITHIEU, HUYLOP, TENMH, HOTENGV, SOSVDK
         List<Map<String, Object>> dsltc;
         List<Map<String, Object>> dsgv;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
-            dsltc = jdbc.queryForList(
-                    "SELECT LTC.MALTC, RTRIM(LTC.NIENKHOA) AS NIENKHOA, LTC.HOCKY, RTRIM(LTC.MAMH) AS MAMH, LTC.NHOM, "
-                            +
-                            "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.HUYLOP, MH.TENMH, " +
-                            "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
-                            "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK "
-                            +
-                            "FROM LOPTINCHI LTC JOIN MONHOC MH ON LTC.MAMH=MH.MAMH JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV "
-                            +
-                            "ORDER BY LTC.NIENKHOA DESC, LTC.HOCKY, MH.TENMH, LTC.NHOM");
-            dsgv = jdbc
-                    .queryForList("SELECT RTRIM(MAGV) AS MAGV, HO + ' ' + TEN AS HOTENGV FROM GIANGVIEN ORDER BY TEN");
+            dsltc = jdbc.queryForList("EXEC sp_DsLopTinChi NULL");
+            dsgv = jdbc.queryForList("EXEC sp_DsGiangVienDropdown NULL");
         } else {
-            dsltc = jdbc.queryForList(
-                    "SELECT LTC.MALTC, RTRIM(LTC.NIENKHOA) AS NIENKHOA, LTC.HOCKY, RTRIM(LTC.MAMH) AS MAMH, LTC.NHOM, "
-                            +
-                            "RTRIM(LTC.MAGV) AS MAGV, RTRIM(LTC.MAKHOA) AS MAKHOA, LTC.SOSVTOITHIEU, LTC.HUYLOP, MH.TENMH, " +
-                            "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
-                            "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK "
-                            +
-                            "FROM LOPTINCHI LTC JOIN MONHOC MH ON LTC.MAMH=MH.MAMH JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV "
-                            +
-                            "WHERE LTC.MAKHOA=? ORDER BY LTC.NIENKHOA DESC, LTC.HOCKY, MH.TENMH, LTC.NHOM",
-                    maKhoa);
-            dsgv = jdbc.queryForList(
-                    "SELECT RTRIM(MAGV) AS MAGV, HO + ' ' + TEN AS HOTENGV FROM GIANGVIEN WHERE MAKHOA=? ORDER BY TEN",
-                    maKhoa);
+            dsltc = jdbc.queryForList("EXEC sp_DsLopTinChi ?", maKhoa);
+            dsgv = jdbc.queryForList("EXEC sp_DsGiangVienDropdown ?", maKhoa);
         }
         model.addAttribute("dsltc", dsltc);
-        model.addAttribute("dsmh", jdbc.queryForList("SELECT RTRIM(MAMH) AS MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
+        model.addAttribute("dsmh", jdbc.queryForList("EXEC sp_DsMonHocDropdown"));
         model.addAttribute("dsgv", dsgv);
-        model.addAttribute("khoaList",
-                jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
+        model.addAttribute("khoaList", jdbc.queryForList("EXEC sp_DsKhoaDropdown"));
         model.addAttribute("selectedMaltc", maltc != null ? maltc : 0);
         return "loptinchi";
     }
@@ -106,7 +84,9 @@ public class LopTinChiController {
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         String kh = (maKhoa != null && !maKhoa.isEmpty()) ? maKhoa.trim() : (String) session.getAttribute("maKhoa");
         if (kh == null || "ALL".equals(kh)) {
-            kh = jdbc.queryForObject("SELECT TOP 1 MAKHOA FROM KHOA ORDER BY MAKHOA", String.class);
+            // Lấy khoa đầu tiên qua sp_DsKhoaDropdown
+            List<Map<String, Object>> khoaRows = jdbc.queryForList("EXEC sp_DsKhoaDropdown");
+            kh = khoaRows.isEmpty() ? null : khoaRows.get(0).get("MAKHOA").toString().trim();
         }
         try {
             if ("add".equals(action)) {
@@ -114,9 +94,11 @@ public class LopTinChiController {
                         nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), kh, sosvtoithieu,
                         huylop ? 1 : 0);
                 try {
-                    maltc = jdbc.queryForObject(
-                            "SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=?",
-                            Integer.class, nienkhoa.trim(), hocky, mamh.trim(), nhom);
+                    // Lấy MALTC vừa tạo qua sp_DsLopTinChi lọc theo niên khóa/HK/môn/nhóm
+                    List<Map<String, Object>> ltcRows = jdbc.queryForList(
+                            "EXEC sp_TimMALTC ?, ?, ?, ?",
+                            nienkhoa.trim(), hocky, mamh.trim(), nhom);
+                    if (!ltcRows.isEmpty()) maltc = ((Number) ltcRows.get(0).get("MALTC")).intValue();
                 } catch (Exception e) {
                 }
                 ra.addFlashAttribute("success", "Mở lớp tín chỉ thành công!");

@@ -1,5 +1,6 @@
 package ptithcm.bean;
 
+import java.beans.PropertyEditorSupport;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -25,20 +27,30 @@ public class BaoCaoController {
     @Autowired
     private ConnectionHelper connHelper;
 
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(Integer.class, new PropertyEditorSupport() {
+            @Override public void setAsText(String text) {
+                if (text == null || text.trim().isEmpty()) setValue(null);
+                else setValue(Integer.parseInt(text.trim()));
+            }
+        });
+    }
+
     @RequestMapping(method = RequestMethod.GET)
     public String show(HttpSession session, ModelMap model) {
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         String nhom = (String) session.getAttribute("nhomQuyen");
         String khoa = (String) session.getAttribute("maKhoa");
-        model.addAttribute("khoaList", jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
-        model.addAttribute("dsmh", jdbc.queryForList("SELECT MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
+        model.addAttribute("khoaList", jdbc.queryForList("EXEC sp_DsKhoaDropdown"));
+        model.addAttribute("dsmh", jdbc.queryForList("EXEC sp_DsMonHocDropdown"));
         if ("KHOA".equals(nhom) && khoa != null && !khoa.equals("ALL")) {
-            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L WHERE L.MAKHOA=? ORDER BY L.MALOP", khoa.trim()));
+            model.addAttribute("dsLop", jdbc.queryForList("EXEC sp_DsLopTheoKhoa ?", khoa.trim()));
         } else {
-            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L ORDER BY L.MALOP"));
+            model.addAttribute("dsLop", jdbc.queryForList("EXEC sp_DsLopTheoKhoa NULL"));
         }
-        model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI ORDER BY NIENKHOA DESC", String.class));
-        model.addAttribute("dsHocKy", jdbc.queryForList("SELECT DISTINCT HOCKY FROM LOPTINCHI ORDER BY HOCKY", Integer.class));
+        model.addAttribute("dsNienKhoa", jdbc.queryForList("EXEC sp_DsNienKhoa NULL", String.class));
+        model.addAttribute("dsHocKy", jdbc.queryForList("EXEC sp_DsHocKy", Integer.class));
         return "baocao";
     }
 
@@ -117,20 +129,21 @@ public class BaoCaoController {
                 model.addAttribute("data", data);
             }
             else if ("DS_SV_DK".equals(reportType)) {
+                // sp_TimMALTCBaoCao trả về MALTC, TENMH (kết hợp filter khoa nếu cần)
                 List<Map<String, Object>> ltcRows;
                 if ("PGV".equals(sessionNhom) && (selectedKhoa == null || selectedKhoa.isEmpty() || selectedKhoa.equals("ALL"))) {
-                    ltcRows = jdbc.queryForList("SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=?", nienkhoa.trim(), hocky, mamh.trim(), nhom);
+                    ltcRows = jdbc.queryForList("EXEC sp_TimMALTCBaoCao ?, ?, ?, ?, NULL", nienkhoa.trim(), hocky, mamh.trim(), nhom);
                     model.addAttribute("tenKhoa", "TOÀN TRƯỜNG");
                 } else {
                     String targetK = "PGV".equals(sessionNhom) ? selectedKhoa : sessionKhoa;
-                    ltcRows = jdbc.queryForList("SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=? AND MAKHOA=?", nienkhoa.trim(), hocky, mamh.trim(), nhom, targetK);
+                    ltcRows = jdbc.queryForList("EXEC sp_TimMALTCBaoCao ?, ?, ?, ?, ?", nienkhoa.trim(), hocky, mamh.trim(), nhom, targetK);
                     model.addAttribute("tenKhoa", gettenKhoa(jdbc, targetK));
                 }
                 if (ltcRows.isEmpty()) {
                     model.addAttribute("error", "Không tìm thấy Lớp tín chỉ này!");
                 } else {
-                    Integer maltc = (Integer) ltcRows.get(0).get("MALTC");
-                    String tenmh = jdbc.queryForObject("SELECT TENMH FROM MONHOC WHERE MAMH=?", String.class, mamh.trim());
+                    Integer maltc = ((Number) ltcRows.get(0).get("MALTC")).intValue();
+                    String tenmh = ltcRows.get(0).get("TENMH") != null ? ltcRows.get(0).get("TENMH").toString() : mamh.trim();
                     List<Map<String, Object>> data = jdbc.queryForList("EXEC sp_InDSSVLTC ?", maltc);
                     model.addAttribute("data", data);
                     model.addAttribute("tenmh", tenmh);
@@ -139,18 +152,18 @@ public class BaoCaoController {
             else if ("BANG_DIEM".equals(reportType)) {
                 List<Map<String, Object>> ltcRows;
                 if ("PGV".equals(sessionNhom) && (selectedKhoa == null || selectedKhoa.isEmpty() || selectedKhoa.equals("ALL"))) {
-                    ltcRows = jdbc.queryForList("SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=?", nienkhoa.trim(), hocky, mamh.trim(), nhom);
+                    ltcRows = jdbc.queryForList("EXEC sp_TimMALTCBaoCao ?, ?, ?, ?, NULL", nienkhoa.trim(), hocky, mamh.trim(), nhom);
                     model.addAttribute("tenKhoa", "TOÀN TRƯỜNG");
                 } else {
                     String targetK = "PGV".equals(sessionNhom) ? selectedKhoa : sessionKhoa;
-                    ltcRows = jdbc.queryForList("SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=? AND MAKHOA=?", nienkhoa.trim(), hocky, mamh.trim(), nhom, targetK);
+                    ltcRows = jdbc.queryForList("EXEC sp_TimMALTCBaoCao ?, ?, ?, ?, ?", nienkhoa.trim(), hocky, mamh.trim(), nhom, targetK);
                     model.addAttribute("tenKhoa", gettenKhoa(jdbc, targetK));
                 }
                 if (ltcRows.isEmpty()) {
                     model.addAttribute("error", "Không tìm thấy Lớp tín chỉ này!");
                 } else {
-                    Integer maltc = (Integer) ltcRows.get(0).get("MALTC");
-                    String tenmh = jdbc.queryForObject("SELECT TENMH FROM MONHOC WHERE MAMH=?", String.class, mamh.trim());
+                    Integer maltc = ((Number) ltcRows.get(0).get("MALTC")).intValue();
+                    String tenmh = ltcRows.get(0).get("TENMH") != null ? ltcRows.get(0).get("TENMH").toString() : mamh.trim();
                     List<Map<String, Object>> data = jdbc.queryForList("EXEC sp_InBangDiemLTC ?", maltc);
                     model.addAttribute("data", data);
                     model.addAttribute("tenmh", tenmh);
@@ -158,10 +171,8 @@ public class BaoCaoController {
             }
             else if ("PHIEU_DIEM".equals(reportType)) {
                 String targetSV = "SV".equals(sessionNhom) ? (String) session.getAttribute("masv") : masv;
-                List<Map<String, Object>> svInfo = jdbc.queryForList(
-                        "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, L.TENLOP, K.TENKHOA " +
-                        "FROM SINHVIEN SV JOIN LOP L ON SV.MALOP=L.MALOP " +
-                        "JOIN KHOA K ON L.MAKHOA=K.MAKHOA WHERE SV.MASV=?", targetSV.trim());
+                // sp_ThongTinSVBaoCao trả về MASV, HO, TEN, MALOP, TENLOP, TENKHOA
+                List<Map<String, Object>> svInfo = jdbc.queryForList("EXEC sp_ThongTinSVBaoCao ?", targetSV.trim());
                 if (svInfo.isEmpty()) {
                     model.addAttribute("error", "Không tìm thấy sinh viên!");
                 } else {
@@ -179,12 +190,13 @@ public class BaoCaoController {
             }
             else if ("BANG_DIEM_TK".equals(reportType)) {
                 // KHOA chỉ được in bảng điểm lớp thuộc khoa mình
-                String lopQuery = "PGV".equals(sessionNhom)
-                        ? "SELECT L.MALOP, L.TENLOP, L.KHOAHOC, L.MAKHOA, K.TENKHOA FROM LOP L JOIN KHOA K ON L.MAKHOA=K.MAKHOA WHERE L.MALOP=?"
-                        : "SELECT L.MALOP, L.TENLOP, L.KHOAHOC, L.MAKHOA, K.TENKHOA FROM LOP L JOIN KHOA K ON L.MAKHOA=K.MAKHOA WHERE L.MALOP=? AND L.MAKHOA=?";
-                List<Map<String, Object>> lopInfo = "PGV".equals(sessionNhom)
-                        ? jdbc.queryForList(lopQuery, malop.trim())
-                        : jdbc.queryForList(lopQuery, malop.trim(), sessionKhoa.trim());
+                // sp_ThongTinLopBaoCao trả về MALOP, TENLOP, KHOAHOC, MAKHOA, TENKHOA (filter khoa nếu cần)
+                List<Map<String, Object>> lopInfo;
+                if ("PGV".equals(sessionNhom)) {
+                    lopInfo = jdbc.queryForList("EXEC sp_ThongTinLopBaoCao ?, NULL", malop.trim());
+                } else {
+                    lopInfo = jdbc.queryForList("EXEC sp_ThongTinLopBaoCao ?, ?", malop.trim(), sessionKhoa.trim());
+                }
                 if (lopInfo.isEmpty()) {
                     model.addAttribute("error", "Không tìm thấy lớp học!");
                 } else {
@@ -199,9 +211,8 @@ public class BaoCaoController {
                         diemData = jdbc.queryForList("EXEC sp_GetDiemDataCross ?", malop.trim());
                     }
 
-                    List<Map<String, Object>> dssv = jdbc.queryForList(
-                            "SELECT MASV, HO + ' ' + TEN AS HOTENSV FROM SINHVIEN WHERE MALOP=? ORDER BY MASV",
-                            malop.trim());
+                    // sp_DsSVCrossTab trả về MASV, HOTENSV
+                    List<Map<String, Object>> dssv = jdbc.queryForList("EXEC sp_DsSVCrossTab ?", malop.trim());
 
                     Map<String, Object> diemMap = new HashMap<>();
                     for (Map<String, Object> row : diemData) {
@@ -223,20 +234,21 @@ public class BaoCaoController {
             model.addAttribute("error", "Lỗi tạo báo cáo: " + e.getMessage());
         }
 
-        model.addAttribute("khoaList", jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA"));
-        model.addAttribute("dsmh", jdbc.queryForList("SELECT MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
+        model.addAttribute("khoaList", jdbc.queryForList("EXEC sp_DsKhoaDropdown"));
+        model.addAttribute("dsmh", jdbc.queryForList("EXEC sp_DsMonHocDropdown"));
         if ("KHOA".equals(sessionNhom) && sessionKhoa != null && !sessionKhoa.equals("ALL")) {
-            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L WHERE L.MAKHOA=? ORDER BY L.MALOP", sessionKhoa.trim()));
+            model.addAttribute("dsLop", jdbc.queryForList("EXEC sp_DsLopTheoKhoa ?", sessionKhoa.trim()));
         } else {
-            model.addAttribute("dsLop", jdbc.queryForList("SELECT L.MALOP, L.TENLOP, L.KHOAHOC FROM LOP L ORDER BY L.MALOP"));
+            model.addAttribute("dsLop", jdbc.queryForList("EXEC sp_DsLopTheoKhoa NULL"));
         }
-        model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI ORDER BY NIENKHOA DESC", String.class));
-        model.addAttribute("dsHocKy", jdbc.queryForList("SELECT DISTINCT HOCKY FROM LOPTINCHI ORDER BY HOCKY", Integer.class));
+        model.addAttribute("dsNienKhoa", jdbc.queryForList("EXEC sp_DsNienKhoa NULL", String.class));
+        model.addAttribute("dsHocKy", jdbc.queryForList("EXEC sp_DsHocKy", Integer.class));
     }
 
     private String gettenKhoa(JdbcTemplate jdbc, String maKhoa) {
         try {
-            return jdbc.queryForObject("SELECT TENKHOA FROM KHOA WHERE MAKHOA=?", String.class, maKhoa);
+            List<Map<String, Object>> rows = jdbc.queryForList("EXEC sp_TimTenKhoa ?", maKhoa);
+            return rows.isEmpty() ? maKhoa : (rows.get(0).get("TENKHOA") != null ? rows.get(0).get("TENKHOA").toString() : maKhoa);
         } catch (Exception e) {
             return maKhoa;
         }

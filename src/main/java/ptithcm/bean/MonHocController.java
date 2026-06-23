@@ -25,7 +25,8 @@ public class MonHocController {
             return "redirect:/home";
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
-        List<Map<String, Object>> dsmh = jdbc.queryForList("SELECT * FROM MONHOC ORDER BY TENMH");
+        // sp_DsMonHoc trả về MAMH, TENMH, SOTIET_LT, SOTIET_TH, SO_LTC, SO_DK
+        List<Map<String, Object>> dsmh = jdbc.queryForList("EXEC sp_DsMonHoc");
 
         int totalLT = 0, totalTH = 0, daMoLTC = 0;
         for (Map<String, Object> mh : dsmh) {
@@ -36,18 +37,8 @@ public class MonHocController {
             if (tc < 1 && (lt + th) > 0) tc = 1;
             mh.put("TINCHI", tc);
             totalLT += lt; totalTH += th;
-            try {
-                // Kiểm tra toàn bộ lịch sử LTC — bao gồm cả đã đóng
-                int soLTC = jdbc.queryForObject("SELECT COUNT(*) FROM LOPTINCHI WHERE MAMH=?", Integer.class, mh.get("MAMH"));
-                mh.put("SO_LTC", soLTC);
-                if (soLTC > 0) daMoLTC++;
-                // Kiểm tra lịch sử đăng ký/điểm để biết môn đã có dữ liệu sinh viên chưa
-                int soDK = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM DANGKY dk " +
-                    "JOIN LOPTINCHI ltc ON dk.MALTC = ltc.MALTC " +
-                    "WHERE ltc.MAMH=?", Integer.class, mh.get("MAMH"));
-                mh.put("SO_DK", soDK);
-            } catch (Exception e) { mh.put("SO_LTC", 0); mh.put("SO_DK", 0); }
+            int soLTC = mh.get("SO_LTC") != null ? ((Number) mh.get("SO_LTC")).intValue() : 0;
+            if (soLTC > 0) daMoLTC++;
         }
         model.addAttribute("dsmh", dsmh);
         model.addAttribute("totalMH", dsmh.size());
@@ -90,33 +81,21 @@ public class MonHocController {
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
             if ("add".equals(action)) {
-                int exists = jdbc.queryForObject("SELECT COUNT(*) FROM MONHOC WHERE MAMH=?", Integer.class, mamh.trim());
-                if (exists > 0) {
-                    ra.addFlashAttribute("error", "Mã MH '" + mamh.trim() + "' đã tồn tại!");
-                    return "redirect:/monhoc?mamh=" + mamh.trim();
-                }
+                // sp_ThemMonHoc kiểm tra trùng MAMH và TENMH, raise error nếu trùng
                 jdbc.update("EXEC sp_ThemMonHoc ?, ?, ?, ?",
                         mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                 ra.addFlashAttribute("success", "Thêm môn học thành công!");
             } else {
-                // ====== NGHIỆP VỤ ĐÚNG: Kiểm tra toàn bộ lịch sử LTC ======
-                int ltcCount = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM LOPTINCHI WHERE MAMH=?", Integer.class, mamh.trim());
+                // ====== NGHIỆP VỤ ĐÚNG: Kiểm tra toàn bộ lịch sử LTC qua SP ======
+                Map<String, Object> kiemTra = jdbc.queryForMap("EXEC sp_KiemTraLTCTheoMH ?", mamh.trim());
+                int ltcCount = kiemTra.get("SO_LTC") != null ? ((Number) kiemTra.get("SO_LTC")).intValue() : 0;
+                int diemCount = kiemTra.get("SO_DK") != null ? ((Number) kiemTra.get("SO_DK")).intValue() : 0;
+                int curLT = kiemTra.get("SOTIET_LT") != null ? ((Number) kiemTra.get("SOTIET_LT")).intValue() : 0;
+                int curTH = kiemTra.get("SOTIET_TH") != null ? ((Number) kiemTra.get("SOTIET_TH")).intValue() : 0;
                 boolean daPhatSinhLTC = ltcCount > 0;
 
                 if (daPhatSinhLTC) {
-                    // Lấy số tiết gốc để so sánh
-                    Map<String, Object> current = jdbc.queryForMap(
-                        "SELECT SOTIET_LT, SOTIET_TH FROM MONHOC WHERE MAMH=?", mamh.trim());
-                    int curLT = current.get("SOTIET_LT") != null ? ((Number) current.get("SOTIET_LT")).intValue() : 0;
-                    int curTH = current.get("SOTIET_TH") != null ? ((Number) current.get("SOTIET_TH")).intValue() : 0;
-
                     // CHẶN: Không cho sửa số tiết nếu môn đã có điểm (DANGKY tồn tại)
-                    int diemCount = jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM DANGKY dk " +
-                        "JOIN LOPTINCHI ltc ON dk.MALTC = ltc.MALTC " +
-                        "WHERE ltc.MAMH = ?", Integer.class, mamh.trim());
-
                     if (diemCount > 0 && (sotietLT != curLT || sotietTH != curTH)) {
                         ra.addFlashAttribute("error",
                             "Không thể sửa số tiết! Môn '" + mamh.trim() +
@@ -125,18 +104,14 @@ public class MonHocController {
                         return "redirect:/monhoc?mamh=" + mamh.trim();
                     }
 
-                    // Cho phép sửa nếu chỉ sửa tên hoặc số tiết chưa có điểm nhưng đã có LTC
+                    // sp_SuaMonHoc kiểm tra trùng TENMH, raise error nếu trùng
+                    jdbc.update("EXEC sp_SuaMonHoc ?, ?, ?, ?",
+                            mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                     if (sotietLT != curLT || sotietTH != curTH) {
-                        // Đã có LTC nhưng chưa có điểm — cảnh báo nhưng cho sửa
-                        jdbc.update("EXEC sp_SuaMonHoc ?, ?, ?, ?",
-                                mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                         ra.addFlashAttribute("success",
-                            "Cập nhật thành công! ⚠ Môn đã mở " + ltcCount + " LTC — " +
+                            "Cập nhật thành công! Môn đã mở " + ltcCount + " LTC — " +
                             "thay đổi số tiết ảnh hưởng tín chỉ quy đổi trong báo cáo.");
                     } else {
-                        // Chỉ sửa tên môn — an toàn tuyệt đối
-                        jdbc.update("EXEC sp_SuaMonHoc ?, ?, ?, ?",
-                                mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                         ra.addFlashAttribute("success", "Cập nhật tên môn học thành công!");
                     }
                 } else {
@@ -160,17 +135,12 @@ public class MonHocController {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
 
-        // ====== NGHIỆP VỤ ĐÚNG: Kiểm tra toàn bộ lịch sử LTC (không phân biệt đang mở hay đã đóng) ======
+        // ====== NGHIỆP VỤ ĐÚNG: Kiểm tra toàn bộ lịch sử LTC qua SP ======
         try {
-            int ltcCount = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM LOPTINCHI WHERE MAMH=?", Integer.class, mamh.trim());
+            Map<String, Object> kiemTra = jdbc.queryForMap("EXEC sp_KiemTraLTCTheoMH ?", mamh.trim());
+            int ltcCount = kiemTra.get("SO_LTC") != null ? ((Number) kiemTra.get("SO_LTC")).intValue() : 0;
             if (ltcCount > 0) {
-                // Kiểm tra thêm có điểm không để thông báo chi tiết hơn
-                int diemCount = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM DANGKY dk " +
-                    "JOIN LOPTINCHI ltc ON dk.MALTC = ltc.MALTC " +
-                    "WHERE ltc.MAMH = ?", Integer.class, mamh.trim());
-
+                int diemCount = kiemTra.get("SO_DK") != null ? ((Number) kiemTra.get("SO_DK")).intValue() : 0;
                 if (diemCount > 0) {
                     ra.addFlashAttribute("error",
                         "Không thể xóa! Môn '" + mamh.trim() + "' đã từng mở " + ltcCount +

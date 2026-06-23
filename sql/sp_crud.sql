@@ -1,0 +1,944 @@
+-- ========================================================
+-- QLDSV_HTC - CRUD STORED PROCEDURES (sp_crud.sql)
+-- Tạo bởi: nhóm 16 đề 3
+-- Mục đích: Thay thế toàn bộ raw SQL trong Java controllers
+-- ========================================================
+
+USE QLDSV_HTC;
+GO
+
+-- ========================================================
+-- UNIQUE CONSTRAINT trên MONHOC.TENMH (nếu chưa có)
+-- ========================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID('MONHOC') AND name = 'UQ_MONHOC_TENMH'
+)
+BEGIN
+    ALTER TABLE MONHOC ADD CONSTRAINT UQ_MONHOC_TENMH UNIQUE (TENMH);
+    PRINT N'Đã thêm UNIQUE constraint UQ_MONHOC_TENMH trên MONHOC.TENMH';
+END
+GO
+
+-- ========================================================
+-- 1. KHOA CRUD
+-- ========================================================
+
+IF OBJECT_ID('sp_DsKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_DsKhoa;
+GO
+-- Trả về danh sách KHOA kèm số lớp và số GV
+CREATE PROCEDURE sp_DsKhoa
+AS
+BEGIN
+    SELECT
+        RTRIM(K.MAKHOA) AS MAKHOA,
+        K.TENKHOA,
+        (SELECT COUNT(*) FROM LOP L WHERE L.MAKHOA = K.MAKHOA) AS LOP_COUNT,
+        (SELECT COUNT(*) FROM GIANGVIEN G WHERE G.MAKHOA = K.MAKHOA) AS GV_COUNT
+    FROM KHOA K
+    ORDER BY K.MAKHOA;
+END
+GO
+
+IF OBJECT_ID('sp_ThemKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_ThemKhoa;
+GO
+CREATE PROCEDURE sp_ThemKhoa
+    @MAKHOA NCHAR(10),
+    @TENKHOA NVARCHAR(50)
+AS
+BEGIN
+    IF EXISTS(SELECT 1 FROM KHOA WHERE MAKHOA = @MAKHOA)
+    BEGIN
+        RAISERROR(N'Mã khoa đã tồn tại!', 16, 1);
+        RETURN;
+    END
+    IF EXISTS(SELECT 1 FROM KHOA WHERE TENKHOA = @TENKHOA)
+    BEGIN
+        RAISERROR(N'Tên khoa đã tồn tại!', 16, 2);
+        RETURN;
+    END
+    INSERT INTO KHOA (MAKHOA, TENKHOA) VALUES (@MAKHOA, @TENKHOA);
+END
+GO
+
+IF OBJECT_ID('sp_SuaKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_SuaKhoa;
+GO
+CREATE PROCEDURE sp_SuaKhoa
+    @MAKHOA NCHAR(10),
+    @TENKHOA NVARCHAR(50)
+AS
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM KHOA WHERE MAKHOA = @MAKHOA)
+    BEGIN
+        RAISERROR(N'Mã khoa không tồn tại!', 16, 1);
+        RETURN;
+    END
+    IF EXISTS(SELECT 1 FROM KHOA WHERE TENKHOA = @TENKHOA AND MAKHOA <> @MAKHOA)
+    BEGIN
+        RAISERROR(N'Tên khoa đã tồn tại ở khoa khác!', 16, 2);
+        RETURN;
+    END
+    UPDATE KHOA SET TENKHOA = @TENKHOA WHERE MAKHOA = @MAKHOA;
+END
+GO
+
+IF OBJECT_ID('sp_XoaKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_XoaKhoa;
+GO
+CREATE PROCEDURE sp_XoaKhoa
+    @MAKHOA NCHAR(10)
+AS
+BEGIN
+    IF EXISTS(SELECT 1 FROM LOP WHERE MAKHOA = @MAKHOA)
+    BEGIN
+        RAISERROR(N'Không thể xóa khoa vì đã có lớp học!', 16, 1);
+        RETURN;
+    END
+    IF EXISTS(SELECT 1 FROM GIANGVIEN WHERE MAKHOA = @MAKHOA)
+    BEGIN
+        RAISERROR(N'Không thể xóa khoa vì đã có giảng viên!', 16, 2);
+        RETURN;
+    END
+    DELETE FROM KHOA WHERE MAKHOA = @MAKHOA;
+END
+GO
+
+IF OBJECT_ID('sp_DemLopGVTheoKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_DemLopGVTheoKhoa;
+GO
+-- Trả về số lớp và số GV của một khoa cụ thể
+CREATE PROCEDURE sp_DemLopGVTheoKhoa
+    @MAKHOA NCHAR(10)
+AS
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM LOP WHERE MAKHOA = @MAKHOA) AS LOP_COUNT,
+        (SELECT COUNT(*) FROM GIANGVIEN WHERE MAKHOA = @MAKHOA) AS GV_COUNT;
+END
+GO
+
+IF OBJECT_ID('sp_DsKhoaDropdown', 'P') IS NOT NULL DROP PROCEDURE sp_DsKhoaDropdown;
+GO
+-- Dropdown danh sách khoa (MAKHOA + TENKHOA)
+CREATE PROCEDURE sp_DsKhoaDropdown
+AS
+BEGIN
+    SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA;
+END
+GO
+
+-- ========================================================
+-- 2. MONHOC - SPs bổ sung (ThemMonHoc/SuaMonHoc/XoaMonHoc đã có trong sp_and_views.sql)
+-- ========================================================
+
+IF OBJECT_ID('sp_DsMonHoc', 'P') IS NOT NULL DROP PROCEDURE sp_DsMonHoc;
+GO
+-- Trả về DS môn học kèm số LTC lịch sử và số lượt ĐK
+CREATE PROCEDURE sp_DsMonHoc
+AS
+BEGIN
+    SELECT
+        RTRIM(MH.MAMH) AS MAMH,
+        MH.TENMH,
+        MH.SOTIET_LT,
+        MH.SOTIET_TH,
+        (SELECT COUNT(*) FROM LOPTINCHI WHERE MAMH = MH.MAMH) AS SO_LTC,
+        (SELECT COUNT(*) FROM DANGKY DK
+            JOIN LOPTINCHI LTC ON DK.MALTC = LTC.MALTC
+            WHERE LTC.MAMH = MH.MAMH) AS SO_DK
+    FROM MONHOC MH
+    ORDER BY MH.TENMH;
+END
+GO
+
+IF OBJECT_ID('sp_KiemTraLTCTheoMH', 'P') IS NOT NULL DROP PROCEDURE sp_KiemTraLTCTheoMH;
+GO
+-- Trả về số LTC và số ĐK/điểm của một môn — dùng trong kiểm tra trước sửa/xóa
+CREATE PROCEDURE sp_KiemTraLTCTheoMH
+    @MAMH NCHAR(10)
+AS
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM LOPTINCHI WHERE MAMH = @MAMH) AS SO_LTC,
+        (SELECT COUNT(*) FROM DANGKY DK
+            JOIN LOPTINCHI LTC ON DK.MALTC = LTC.MALTC
+            WHERE LTC.MAMH = @MAMH) AS SO_DK,
+        (SELECT SOTIET_LT FROM MONHOC WHERE MAMH = @MAMH) AS SOTIET_LT,
+        (SELECT SOTIET_TH FROM MONHOC WHERE MAMH = @MAMH) AS SOTIET_TH;
+END
+GO
+
+-- ========================================================
+-- 3. LOP - SPs bổ sung (ThemLop/SuaLop/XoaLop đã có)
+-- ========================================================
+
+IF OBJECT_ID('sp_DsLop', 'P') IS NOT NULL DROP PROCEDURE sp_DsLop;
+GO
+-- Trả về DS lớp kèm tên khoa và sĩ số
+CREATE PROCEDURE sp_DsLop
+    @MAKHOA NCHAR(10) = NULL  -- NULL hoặc 'ALL' = tất cả
+AS
+BEGIN
+    SELECT
+        L.MALOP, L.TENLOP, L.KHOAHOC, RTRIM(L.MAKHOA) AS MAKHOA,
+        K.TENKHOA,
+        (SELECT COUNT(*) FROM SINHVIEN SV WHERE SV.MALOP = L.MALOP) AS SISO
+    FROM LOP L
+    JOIN KHOA K ON L.MAKHOA = K.MAKHOA
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR L.MAKHOA = @MAKHOA)
+    ORDER BY L.MALOP;
+END
+GO
+
+IF OBJECT_ID('sp_DsLopTheoKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_DsLopTheoKhoa;
+GO
+CREATE PROCEDURE sp_DsLopTheoKhoa
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT MALOP, TENLOP, KHOAHOC, RTRIM(MAKHOA) AS MAKHOA
+    FROM LOP
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR MAKHOA = @MAKHOA)
+    ORDER BY MALOP;
+END
+GO
+
+IF OBJECT_ID('sp_DsLopDropdown', 'P') IS NOT NULL DROP PROCEDURE sp_DsLopDropdown;
+GO
+CREATE PROCEDURE sp_DsLopDropdown
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT L.MALOP, L.TENLOP, L.KHOAHOC
+    FROM LOP L
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR L.MAKHOA = @MAKHOA)
+    ORDER BY L.MALOP;
+END
+GO
+
+-- ========================================================
+-- 4. SINHVIEN - SPs bổ sung (ThemSinhVien/SuaSinhVien/XoaSinhVien đã có)
+-- ========================================================
+
+IF OBJECT_ID('sp_DsSinhVienTheoLop', 'P') IS NOT NULL DROP PROCEDURE sp_DsSinhVienTheoLop;
+GO
+CREATE PROCEDURE sp_DsSinhVienTheoLop
+    @MALOP NCHAR(10)
+AS
+BEGIN
+    SELECT SV.MASV, SV.HO, SV.TEN, SV.PHAI, SV.DIACHI, SV.NGAYSINH,
+           SV.MALOP, SV.DANGHIHOC, L.KHOAHOC,
+           (SELECT COUNT(*) FROM DANGKY DK WHERE DK.MASV = SV.MASV) AS LUOT_DK
+    FROM SINHVIEN SV
+    JOIN LOP L ON SV.MALOP = L.MALOP
+    WHERE SV.MALOP = @MALOP
+    ORDER BY SV.MASV;
+END
+GO
+
+IF OBJECT_ID('sp_DsSinhVienDangHoc', 'P') IS NOT NULL DROP PROCEDURE sp_DsSinhVienDangHoc;
+GO
+-- DS SV đang học (DANGHIHOC=0) dùng cho dropdown tạo tài khoản
+CREATE PROCEDURE sp_DsSinhVienDangHoc
+AS
+BEGIN
+    SELECT S.MASV, S.HO + N' ' + S.TEN AS HOTEN,
+           RTRIM(L.MAKHOA) AS MAKHOA, S.MALOP
+    FROM SINHVIEN S
+    JOIN LOP L ON S.MALOP = L.MALOP
+    WHERE S.DANGHIHOC = 0
+    ORDER BY S.TEN, S.HO;
+END
+GO
+
+IF OBJECT_ID('sp_DemSinhVienTheoLop', 'P') IS NOT NULL DROP PROCEDURE sp_DemSinhVienTheoLop;
+GO
+CREATE PROCEDURE sp_DemSinhVienTheoLop
+    @MALOP NCHAR(10)
+AS
+BEGIN
+    SELECT COUNT(*) AS SISO FROM SINHVIEN WHERE MALOP = @MALOP;
+END
+GO
+
+IF OBJECT_ID('sp_DemDangKyTheoSV', 'P') IS NOT NULL DROP PROCEDURE sp_DemDangKyTheoSV;
+GO
+CREATE PROCEDURE sp_DemDangKyTheoSV
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT COUNT(*) AS LUOT_DK FROM DANGKY WHERE MASV = @MASV;
+END
+GO
+
+-- ========================================================
+-- 5. GIANGVIEN - SPs bổ sung (ThemGiangVien/SuaGiangVien/XoaGiangVien đã có)
+-- ========================================================
+
+IF OBJECT_ID('sp_DsGiangVien', 'P') IS NOT NULL DROP PROCEDURE sp_DsGiangVien;
+GO
+CREATE PROCEDURE sp_DsGiangVien
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT
+        RTRIM(G.MAGV) AS MAGV, G.HO, G.TEN, G.HOCVI, G.HOCHAM, G.CHUYENMON,
+        RTRIM(G.MAKHOA) AS MAKHOA, K.TENKHOA,
+        (SELECT COUNT(*) FROM LOPTINCHI WHERE MAGV = G.MAGV) AS SO_LTC
+    FROM GIANGVIEN G
+    JOIN KHOA K ON G.MAKHOA = K.MAKHOA
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR G.MAKHOA = @MAKHOA)
+    ORDER BY G.TEN, G.HO;
+END
+GO
+
+IF OBJECT_ID('sp_DsGiangVienDropdown', 'P') IS NOT NULL DROP PROCEDURE sp_DsGiangVienDropdown;
+GO
+-- Dropdown danh sách GV (cho tài khoản và LTC) — trả về cả HOTENGV và HOTEN (cùng giá trị)
+CREATE PROCEDURE sp_DsGiangVienDropdown
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT RTRIM(MAGV) AS MAGV,
+           HO + N' ' + TEN AS HOTENGV,
+           HO + N' ' + TEN AS HOTEN,
+           RTRIM(MAKHOA) AS MAKHOA
+    FROM GIANGVIEN
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR MAKHOA = @MAKHOA)
+    ORDER BY TEN, HO;
+END
+GO
+
+-- ========================================================
+-- 6. LOPTINCHI - SPs bổ sung
+-- ========================================================
+
+IF OBJECT_ID('sp_DsLopTinChi', 'P') IS NOT NULL DROP PROCEDURE sp_DsLopTinChi;
+GO
+CREATE PROCEDURE sp_DsLopTinChi
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT
+        LTC.MALTC,
+        RTRIM(LTC.NIENKHOA) AS NIENKHOA,
+        LTC.HOCKY,
+        RTRIM(LTC.MAMH) AS MAMH,
+        LTC.NHOM,
+        RTRIM(LTC.MAGV) AS MAGV,
+        RTRIM(LTC.MAKHOA) AS MAKHOA,
+        LTC.SOSVTOITHIEU,
+        LTC.HUYLOP,
+        MH.TENMH,
+        GV.HO + N' ' + GV.TEN AS HOTENGV,
+        (SELECT COUNT(*) FROM DANGKY DK
+            WHERE DK.MALTC = LTC.MALTC AND (DK.HUYDANGKY = 0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK
+    FROM LOPTINCHI LTC
+    JOIN MONHOC MH ON LTC.MAMH = MH.MAMH
+    JOIN GIANGVIEN GV ON LTC.MAGV = GV.MAGV
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR LTC.MAKHOA = @MAKHOA)
+    ORDER BY LTC.NIENKHOA DESC, LTC.HOCKY, MH.TENMH, LTC.NHOM;
+END
+GO
+
+IF OBJECT_ID('sp_HuyLopTinChi', 'P') IS NOT NULL DROP PROCEDURE sp_HuyLopTinChi;
+GO
+-- Hủy lớp tín chỉ (set HUYLOP=1) với validate: số SV ĐK phải < SOSVTOITHIEU
+CREATE PROCEDURE sp_HuyLopTinChi
+    @MALTC INT
+AS
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM LOPTINCHI WHERE MALTC = @MALTC)
+    BEGIN
+        RAISERROR(N'Lớp tín chỉ không tồn tại!', 16, 1);
+        RETURN;
+    END
+
+    DECLARE @soSVDK INT, @soSVMin INT;
+    SELECT @soSVMin = SOSVTOITHIEU FROM LOPTINCHI WHERE MALTC = @MALTC;
+    SELECT @soSVDK = COUNT(*)
+    FROM DANGKY
+    WHERE MALTC = @MALTC AND (HUYDANGKY = 0 OR HUYDANGKY IS NULL);
+
+    IF @soSVDK >= @soSVMin
+    BEGIN
+        RAISERROR(N'Không thể hủy lớp tín chỉ! Số SV đăng ký (%d) đã đạt/vượt mức tối thiểu (%d). Vui lòng hủy bớt đăng ký sinh viên trước.', 16, 2, @soSVDK, @soSVMin);
+        RETURN;
+    END
+
+    UPDATE LOPTINCHI SET HUYLOP = 1 WHERE MALTC = @MALTC;
+END
+GO
+
+-- ========================================================
+-- 7. DANGKY - SPs bổ sung (DangKyLTC/HuyDangKyLTC đã có)
+-- ========================================================
+
+IF OBJECT_ID('sp_DsLopHocChinh', 'P') IS NOT NULL DROP PROCEDURE sp_DsLopHocChinh;
+GO
+-- DS lớp hành chính dùng cho PGV/KHOA chọn SV để đăng ký
+CREATE PROCEDURE sp_DsLopHocChinh
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT
+        L.MALOP, L.TENLOP, RTRIM(L.MAKHOA) AS MAKHOA,
+        (SELECT COUNT(*) FROM SINHVIEN SV WHERE SV.MALOP = L.MALOP) AS SISO
+    FROM LOP L
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR L.MAKHOA = @MAKHOA)
+    ORDER BY L.MALOP;
+END
+GO
+
+IF OBJECT_ID('sp_DsSVTrongLop', 'P') IS NOT NULL DROP PROCEDURE sp_DsSVTrongLop;
+GO
+-- DS SV trong một lớp HC (cho đăng ký)
+CREATE PROCEDURE sp_DsSVTrongLop
+    @MALOP NCHAR(10)
+AS
+BEGIN
+    SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC, L.KHOAHOC
+    FROM SINHVIEN SV
+    JOIN LOP L ON SV.MALOP = L.MALOP
+    WHERE SV.MALOP = @MALOP
+    ORDER BY SV.TEN, SV.HO;
+END
+GO
+
+IF OBJECT_ID('sp_ThongTinSV', 'P') IS NOT NULL DROP PROCEDURE sp_ThongTinSV;
+GO
+-- Thông tin chi tiết một SV kèm thông tin lớp và khoa
+CREATE PROCEDURE sp_ThongTinSV
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC,
+           L.TENLOP, RTRIM(L.MAKHOA) AS MAKHOA, L.KHOAHOC
+    FROM SINHVIEN SV
+    JOIN LOP L ON SV.MALOP = L.MALOP
+    WHERE SV.MASV = @MASV;
+END
+GO
+
+IF OBJECT_ID('sp_DsLopTinChiMo', 'P') IS NOT NULL DROP PROCEDURE sp_DsLopTinChiMo;
+GO
+-- DS LTC đang mở (HUYLOP=0) theo niên khóa + học kỳ — dùng cho SV đăng ký
+CREATE PROCEDURE sp_DsLopTinChiMo
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT
+AS
+BEGIN
+    SELECT
+        LTC.MALTC,
+        RTRIM(MH.MAMH) AS MAMH,
+        MH.TENMH,
+        LTC.NHOM,
+        LTC.SOSVTOITHIEU,
+        MH.SOTIET_LT,
+        MH.SOTIET_TH,
+        GV.HO + N' ' + GV.TEN AS HOTENGV,
+        (SELECT COUNT(*) FROM DANGKY DK
+            WHERE DK.MALTC = LTC.MALTC AND (DK.HUYDANGKY = 0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK
+    FROM LOPTINCHI LTC
+    JOIN MONHOC MH ON LTC.MAMH = MH.MAMH
+    JOIN GIANGVIEN GV ON LTC.MAGV = GV.MAGV
+    WHERE LTC.NIENKHOA = @NIENKHOA AND LTC.HOCKY = @HOCKY AND LTC.HUYLOP = 0
+    ORDER BY MH.TENMH, LTC.NHOM;
+END
+GO
+
+IF OBJECT_ID('sp_DsDangKyTheoSV', 'P') IS NOT NULL DROP PROCEDURE sp_DsDangKyTheoSV;
+GO
+-- DS LTC đã đăng ký (chưa hủy) của một SV — toàn bộ niên khóa
+CREATE PROCEDURE sp_DsDangKyTheoSV
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT
+        LTC.MALTC, LTC.NIENKHOA, LTC.HOCKY, MH.TENMH, LTC.NHOM,
+        MH.SOTIET_LT, MH.SOTIET_TH,
+        CASE WHEN DK.DIEM_CK IS NOT NULL
+            THEN ROUND(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK), 2)
+            ELSE NULL END AS DIEM_HM
+    FROM DANGKY DK
+    JOIN LOPTINCHI LTC ON DK.MALTC = LTC.MALTC
+    JOIN MONHOC MH ON LTC.MAMH = MH.MAMH
+    WHERE DK.MASV = @MASV AND (DK.HUYDANGKY = 0 OR DK.HUYDANGKY IS NULL)
+    ORDER BY LTC.NIENKHOA DESC, LTC.HOCKY DESC, MH.TENMH;
+END
+GO
+
+IF OBJECT_ID('sp_DsDaDangKyMaltc', 'P') IS NOT NULL DROP PROCEDURE sp_DsDaDangKyMaltc;
+GO
+-- Danh sách MALTC mà SV đã đăng ký (chưa hủy) — dùng đánh dấu checkbox
+CREATE PROCEDURE sp_DsDaDangKyMaltc
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT DK.MALTC
+    FROM DANGKY DK
+    WHERE DK.MASV = @MASV AND (DK.HUYDANGKY = 0 OR DK.HUYDANGKY IS NULL);
+END
+GO
+
+IF OBJECT_ID('sp_DemDangKyTrongHK', 'P') IS NOT NULL DROP PROCEDURE sp_DemDangKyTrongHK;
+GO
+-- Đếm số môn SV đã đăng ký trong HK — dùng kiểm tra giới hạn 8 môn/HK
+CREATE PROCEDURE sp_DemDangKyTrongHK
+    @MASV NCHAR(10),
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT
+AS
+BEGIN
+    SELECT COUNT(*) AS SO_MON
+    FROM DANGKY DK
+    JOIN LOPTINCHI LTC ON DK.MALTC = LTC.MALTC
+    WHERE DK.MASV = @MASV
+      AND LTC.NIENKHOA = @NIENKHOA
+      AND LTC.HOCKY = @HOCKY
+      AND (DK.HUYDANGKY = 0 OR DK.HUYDANGKY IS NULL);
+END
+GO
+
+IF OBJECT_ID('sp_KiemTraDiemCKDangKy', 'P') IS NOT NULL DROP PROCEDURE sp_KiemTraDiemCKDangKy;
+GO
+-- Kiểm tra SV có điểm CK chưa — trước khi hủy đăng ký
+CREATE PROCEDURE sp_KiemTraDiemCKDangKy
+    @MALTC INT,
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT DIEM_CK FROM DANGKY WHERE MALTC = @MALTC AND MASV = @MASV;
+END
+GO
+
+-- ========================================================
+-- 8. DIEM - SPs bổ sung (GhiDiem đã có)
+-- ========================================================
+
+IF OBJECT_ID('sp_TimMALTC', 'P') IS NOT NULL DROP PROCEDURE sp_TimMALTC;
+GO
+-- Tìm MALTC theo niên khóa/học kỳ/môn/nhóm (không giới hạn khoa)
+CREATE PROCEDURE sp_TimMALTC
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT,
+    @MAMH NCHAR(10),
+    @NHOM INT
+AS
+BEGIN
+    SELECT
+        LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU,
+        GV.HO + N' ' + GV.TEN AS HOTENGV,
+        K.TENKHOA,
+        RTRIM(LTC.MAKHOA) AS MAKHOA
+    FROM LOPTINCHI LTC
+    JOIN GIANGVIEN GV ON LTC.MAGV = GV.MAGV
+    JOIN KHOA K ON LTC.MAKHOA = K.MAKHOA
+    WHERE LTC.NIENKHOA = @NIENKHOA AND LTC.HOCKY = @HOCKY
+      AND LTC.MAMH = @MAMH AND LTC.NHOM = @NHOM;
+END
+GO
+
+IF OBJECT_ID('sp_TimMALTCTheoKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_TimMALTCTheoKhoa;
+GO
+-- Tìm MALTC theo niên khóa/học kỳ/môn/nhóm và giới hạn theo MAKHOA
+CREATE PROCEDURE sp_TimMALTCTheoKhoa
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT,
+    @MAMH NCHAR(10),
+    @NHOM INT,
+    @MAKHOA NCHAR(10)
+AS
+BEGIN
+    SELECT
+        LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU,
+        GV.HO + N' ' + GV.TEN AS HOTENGV,
+        K.TENKHOA,
+        RTRIM(LTC.MAKHOA) AS MAKHOA
+    FROM LOPTINCHI LTC
+    JOIN GIANGVIEN GV ON LTC.MAGV = GV.MAGV
+    JOIN KHOA K ON LTC.MAKHOA = K.MAKHOA
+    WHERE LTC.NIENKHOA = @NIENKHOA AND LTC.HOCKY = @HOCKY
+      AND LTC.MAMH = @MAMH AND LTC.NHOM = @NHOM
+      AND LTC.MAKHOA = @MAKHOA;
+END
+GO
+
+IF OBJECT_ID('sp_LoadDiemSV', 'P') IS NOT NULL DROP PROCEDURE sp_LoadDiemSV;
+GO
+-- Load danh sách SV + điểm của một LTC
+CREATE PROCEDURE sp_LoadDiemSV
+    @MALTC INT
+AS
+BEGIN
+    SELECT
+        DK.MASV,
+        SV.HO + N' ' + SV.TEN AS HOTENSV,
+        SV.MALOP,
+        DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK
+    FROM DANGKY DK
+    JOIN SINHVIEN SV ON DK.MASV = SV.MASV
+    WHERE DK.MALTC = @MALTC AND (DK.HUYDANGKY = 0 OR DK.HUYDANGKY IS NULL)
+    ORDER BY SV.TEN, SV.HO;
+END
+GO
+
+IF OBJECT_ID('sp_DsNienKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_DsNienKhoa;
+GO
+-- Danh sách niên khóa (distinct) — có thể lọc theo khoa
+CREATE PROCEDURE sp_DsNienKhoa
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT DISTINCT NIENKHOA
+    FROM LOPTINCHI
+    WHERE (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR MAKHOA = @MAKHOA)
+    ORDER BY NIENKHOA DESC;
+END
+GO
+
+IF OBJECT_ID('sp_DsHocKy', 'P') IS NOT NULL DROP PROCEDURE sp_DsHocKy;
+GO
+-- Danh sách học kỳ (distinct)
+CREATE PROCEDURE sp_DsHocKy
+AS
+BEGIN
+    SELECT DISTINCT HOCKY FROM LOPTINCHI ORDER BY HOCKY;
+END
+GO
+
+IF OBJECT_ID('sp_TimTenMonHoc', 'P') IS NOT NULL DROP PROCEDURE sp_TimTenMonHoc;
+GO
+CREATE PROCEDURE sp_TimTenMonHoc
+    @MAMH NCHAR(10)
+AS
+BEGIN
+    SELECT TENMH FROM MONHOC WHERE MAMH = @MAMH;
+END
+GO
+
+-- ========================================================
+-- 9. BAOCAO - SPs lookup bổ sung
+-- ========================================================
+
+IF OBJECT_ID('sp_TimMALTCBaoCao', 'P') IS NOT NULL DROP PROCEDURE sp_TimMALTCBaoCao;
+GO
+-- Tìm MALTC cho báo cáo DS_SV_DK và BANG_DIEM
+CREATE PROCEDURE sp_TimMALTCBaoCao
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT,
+    @MAMH NCHAR(10),
+    @NHOM INT,
+    @MAKHOA NCHAR(10) = NULL  -- NULL hoặc 'ALL' = không lọc theo khoa
+AS
+BEGIN
+    SELECT MALTC
+    FROM LOPTINCHI
+    WHERE NIENKHOA = @NIENKHOA AND HOCKY = @HOCKY
+      AND MAMH = @MAMH AND NHOM = @NHOM
+      AND (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR MAKHOA = @MAKHOA);
+END
+GO
+
+IF OBJECT_ID('sp_ThongTinSVBaoCao', 'P') IS NOT NULL DROP PROCEDURE sp_ThongTinSVBaoCao;
+GO
+-- Thông tin SV cho phiếu điểm
+CREATE PROCEDURE sp_ThongTinSVBaoCao
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, L.TENLOP, K.TENKHOA
+    FROM SINHVIEN SV
+    JOIN LOP L ON SV.MALOP = L.MALOP
+    JOIN KHOA K ON L.MAKHOA = K.MAKHOA
+    WHERE SV.MASV = @MASV;
+END
+GO
+
+IF OBJECT_ID('sp_DsSVTrongLopBaoCao', 'P') IS NOT NULL DROP PROCEDURE sp_DsSVTrongLopBaoCao;
+GO
+-- DS SV trong lớp cho bảng điểm tổng kết
+CREATE PROCEDURE sp_DsSVTrongLopBaoCao
+    @MALOP NCHAR(10)
+AS
+BEGIN
+    SELECT MASV, HO + N' ' + TEN AS HOTENSV
+    FROM SINHVIEN
+    WHERE MALOP = @MALOP
+    ORDER BY MASV;
+END
+GO
+
+IF OBJECT_ID('sp_ThongTinLopBaoCao', 'P') IS NOT NULL DROP PROCEDURE sp_ThongTinLopBaoCao;
+GO
+-- Thông tin lớp cho bảng điểm tổng kết
+CREATE PROCEDURE sp_ThongTinLopBaoCao
+    @MALOP NCHAR(10),
+    @MAKHOA NCHAR(10) = NULL  -- NULL = không giới hạn khoa (PGV)
+AS
+BEGIN
+    SELECT L.MALOP, L.TENLOP, L.KHOAHOC, RTRIM(L.MAKHOA) AS MAKHOA, K.TENKHOA
+    FROM LOP L
+    JOIN KHOA K ON L.MAKHOA = K.MAKHOA
+    WHERE L.MALOP = @MALOP
+      AND (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR L.MAKHOA = @MAKHOA);
+END
+GO
+
+IF OBJECT_ID('sp_TimTenKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_TimTenKhoa;
+GO
+CREATE PROCEDURE sp_TimTenKhoa
+    @MAKHOA NCHAR(10)
+AS
+BEGIN
+    SELECT TENKHOA FROM KHOA WHERE MAKHOA = @MAKHOA;
+END
+GO
+
+-- ========================================================
+-- 10. SPs bổ sung thiếu (alias/helper SPs)
+-- ========================================================
+
+IF OBJECT_ID('sp_DsMonHocDropdown', 'P') IS NOT NULL DROP PROCEDURE sp_DsMonHocDropdown;
+GO
+CREATE PROCEDURE sp_DsMonHocDropdown
+AS
+BEGIN
+    SELECT RTRIM(MAMH) AS MAMH, TENMH FROM MONHOC ORDER BY TENMH;
+END
+GO
+
+-- sp_DsDaKy: DS MALTC đã đăng ký của SV (alias sp_DsDaDangKyMaltc)
+IF OBJECT_ID('sp_DsDaKy', 'P') IS NOT NULL DROP PROCEDURE sp_DsDaKy;
+GO
+CREATE PROCEDURE sp_DsDaKy
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT MALTC FROM DANGKY
+    WHERE MASV = @MASV AND (HUYDANGKY = 0 OR HUYDANGKY IS NULL);
+END
+GO
+
+-- sp_DemDKTheoHK: Đếm số môn đã ĐK trong HK (alias sp_DemDangKyTrongHK nhưng trả về SO_DK)
+IF OBJECT_ID('sp_DemDKTheoHK', 'P') IS NOT NULL DROP PROCEDURE sp_DemDKTheoHK;
+GO
+CREATE PROCEDURE sp_DemDKTheoHK
+    @MASV NCHAR(10),
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT
+AS
+BEGIN
+    SELECT COUNT(*) AS SO_DK
+    FROM DANGKY DK
+    JOIN LOPTINCHI LTC ON DK.MALTC = LTC.MALTC
+    WHERE DK.MASV = @MASV
+      AND LTC.NIENKHOA = @NIENKHOA
+      AND LTC.HOCKY = @HOCKY
+      AND (DK.HUYDANGKY = 0 OR DK.HUYDANGKY IS NULL);
+END
+GO
+
+-- sp_KiemTraDiemCK: Kiểm tra DIEM_CK trước khi hủy đăng ký
+IF OBJECT_ID('sp_KiemTraDiemCK', 'P') IS NOT NULL DROP PROCEDURE sp_KiemTraDiemCK;
+GO
+CREATE PROCEDURE sp_KiemTraDiemCK
+    @MALTC INT,
+    @MASV NCHAR(10)
+AS
+BEGIN
+    SELECT DIEM_CK FROM DANGKY WHERE MALTC = @MALTC AND MASV = @MASV;
+END
+GO
+
+-- sp_LayMaKhoaLTC: Lấy MAKHOA của một LTC
+IF OBJECT_ID('sp_LayMaKhoaLTC', 'P') IS NOT NULL DROP PROCEDURE sp_LayMaKhoaLTC;
+GO
+CREATE PROCEDURE sp_LayMaKhoaLTC
+    @MALTC INT
+AS
+BEGIN
+    SELECT RTRIM(MAKHOA) AS MAKHOA FROM LOPTINCHI WHERE MALTC = @MALTC;
+END
+GO
+
+-- sp_TongSinhVien: Đếm tổng số SV
+IF OBJECT_ID('sp_TongSinhVien', 'P') IS NOT NULL DROP PROCEDURE sp_TongSinhVien;
+GO
+CREATE PROCEDURE sp_TongSinhVien
+AS
+BEGIN
+    SELECT COUNT(*) AS TONG_SV FROM SINHVIEN;
+END
+GO
+
+-- sp_DsSVDropdown: DS SV đang học (DANGHIHOC=0) với HOTEN — dùng tạo tài khoản SV
+IF OBJECT_ID('sp_DsSVDropdown', 'P') IS NOT NULL DROP PROCEDURE sp_DsSVDropdown;
+GO
+CREATE PROCEDURE sp_DsSVDropdown
+AS
+BEGIN
+    SELECT S.MASV, S.HO + N' ' + S.TEN AS HOTEN,
+           RTRIM(L.MAKHOA) AS MAKHOA, S.MALOP
+    FROM SINHVIEN S
+    JOIN LOP L ON S.MALOP = L.MALOP
+    WHERE S.DANGHIHOC = 0
+    ORDER BY S.TEN, S.HO;
+END
+GO
+
+-- sp_DsSVCrossTab: DS SV trong lớp cho bảng điểm tổng kết (có HOTENSV)
+IF OBJECT_ID('sp_DsSVCrossTab', 'P') IS NOT NULL DROP PROCEDURE sp_DsSVCrossTab;
+GO
+CREATE PROCEDURE sp_DsSVCrossTab
+    @MALOP NCHAR(10)
+AS
+BEGIN
+    SELECT MASV, HO + N' ' + TEN AS HOTENSV
+    FROM SINHVIEN
+    WHERE MALOP = @MALOP
+    ORDER BY MASV;
+END
+GO
+
+-- Cập nhật sp_TimMALTC để trả thêm TENMH (dùng cho DiemController và BaoCaoController)
+IF OBJECT_ID('sp_TimMALTC', 'P') IS NOT NULL DROP PROCEDURE sp_TimMALTC;
+GO
+CREATE PROCEDURE sp_TimMALTC
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT,
+    @MAMH NCHAR(10),
+    @NHOM INT
+AS
+BEGIN
+    SELECT
+        LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU,
+        GV.HO + N' ' + GV.TEN AS HOTENGV,
+        K.TENKHOA,
+        RTRIM(LTC.MAKHOA) AS MAKHOA,
+        MH.TENMH
+    FROM LOPTINCHI LTC
+    JOIN GIANGVIEN GV ON LTC.MAGV = GV.MAGV
+    JOIN KHOA K ON LTC.MAKHOA = K.MAKHOA
+    JOIN MONHOC MH ON LTC.MAMH = MH.MAMH
+    WHERE LTC.NIENKHOA = @NIENKHOA AND LTC.HOCKY = @HOCKY
+      AND LTC.MAMH = @MAMH AND LTC.NHOM = @NHOM;
+END
+GO
+
+IF OBJECT_ID('sp_TimMALTCTheoKhoa', 'P') IS NOT NULL DROP PROCEDURE sp_TimMALTCTheoKhoa;
+GO
+CREATE PROCEDURE sp_TimMALTCTheoKhoa
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT,
+    @MAMH NCHAR(10),
+    @NHOM INT,
+    @MAKHOA NCHAR(10)
+AS
+BEGIN
+    SELECT
+        LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU,
+        GV.HO + N' ' + GV.TEN AS HOTENGV,
+        K.TENKHOA,
+        RTRIM(LTC.MAKHOA) AS MAKHOA,
+        MH.TENMH
+    FROM LOPTINCHI LTC
+    JOIN GIANGVIEN GV ON LTC.MAGV = GV.MAGV
+    JOIN KHOA K ON LTC.MAKHOA = K.MAKHOA
+    JOIN MONHOC MH ON LTC.MAMH = MH.MAMH
+    WHERE LTC.NIENKHOA = @NIENKHOA AND LTC.HOCKY = @HOCKY
+      AND LTC.MAMH = @MAMH AND LTC.NHOM = @NHOM
+      AND LTC.MAKHOA = @MAKHOA;
+END
+GO
+
+-- Cập nhật sp_TimMALTCBaoCao để trả thêm TENMH
+IF OBJECT_ID('sp_TimMALTCBaoCao', 'P') IS NOT NULL DROP PROCEDURE sp_TimMALTCBaoCao;
+GO
+CREATE PROCEDURE sp_TimMALTCBaoCao
+    @NIENKHOA NCHAR(9),
+    @HOCKY INT,
+    @MAMH NCHAR(10),
+    @NHOM INT,
+    @MAKHOA NCHAR(10) = NULL
+AS
+BEGIN
+    SELECT LTC.MALTC, MH.TENMH
+    FROM LOPTINCHI LTC
+    JOIN MONHOC MH ON LTC.MAMH = MH.MAMH
+    WHERE LTC.NIENKHOA = @NIENKHOA AND LTC.HOCKY = @HOCKY
+      AND LTC.MAMH = @MAMH AND LTC.NHOM = @NHOM
+      AND (@MAKHOA IS NULL OR @MAKHOA = 'ALL' OR LTC.MAKHOA = @MAKHOA);
+END
+GO
+
+-- ========================================================
+-- GRANT PERMISSIONS
+-- ========================================================
+-- Khoa CRUD
+GRANT EXECUTE ON sp_DsKhoa TO PGV, KHOA;
+GRANT EXECUTE ON sp_ThemKhoa TO PGV;
+GRANT EXECUTE ON sp_SuaKhoa TO PGV;
+GRANT EXECUTE ON sp_XoaKhoa TO PGV;
+GRANT EXECUTE ON sp_DemLopGVTheoKhoa TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsKhoaDropdown TO PGV, KHOA, NHOM_SV;
+
+-- MonHoc
+GRANT EXECUTE ON sp_DsMonHoc TO PGV, KHOA;
+GRANT EXECUTE ON sp_KiemTraLTCTheoMH TO PGV;
+GRANT EXECUTE ON sp_TimTenMonHoc TO PGV, KHOA, NHOM_SV;
+
+-- Lop
+GRANT EXECUTE ON sp_DsLop TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsLopTheoKhoa TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DsLopDropdown TO PGV, KHOA, NHOM_SV;
+
+-- SinhVien
+GRANT EXECUTE ON sp_DsSinhVienTheoLop TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsSinhVienDangHoc TO PGV, KHOA;
+GRANT EXECUTE ON sp_DemSinhVienTheoLop TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DemDangKyTheoSV TO PGV, KHOA;
+
+-- GiangVien
+GRANT EXECUTE ON sp_DsGiangVien TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsGiangVienDropdown TO PGV, KHOA;
+
+-- LopTinChi
+GRANT EXECUTE ON sp_DsLopTinChi TO PGV, KHOA;
+GRANT EXECUTE ON sp_HuyLopTinChi TO PGV;
+
+-- DangKy
+GRANT EXECUTE ON sp_DsLopHocChinh TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsSVTrongLop TO PGV, KHOA;
+GRANT EXECUTE ON sp_ThongTinSV TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DsLopTinChiMo TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DsDangKyTheoSV TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DsDaDangKyMaltc TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DemDangKyTrongHK TO PGV, NHOM_SV;
+GRANT EXECUTE ON sp_KiemTraDiemCKDangKy TO PGV, NHOM_SV;
+
+-- Diem
+GRANT EXECUTE ON sp_TimMALTC TO PGV, KHOA;
+GRANT EXECUTE ON sp_TimMALTCTheoKhoa TO PGV, KHOA;
+GRANT EXECUTE ON sp_LoadDiemSV TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsNienKhoa TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsHocKy TO PGV, KHOA;
+
+-- BaoCao
+GRANT EXECUTE ON sp_TimMALTCBaoCao TO PGV, KHOA;
+GRANT EXECUTE ON sp_ThongTinSVBaoCao TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DsSVTrongLopBaoCao TO PGV, KHOA;
+GRANT EXECUTE ON sp_ThongTinLopBaoCao TO PGV, KHOA;
+GRANT EXECUTE ON sp_TimTenKhoa TO PGV, KHOA, NHOM_SV;
+
+-- SPs bổ sung
+GRANT EXECUTE ON sp_DsMonHocDropdown TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DsDaKy TO PGV, KHOA, NHOM_SV;
+GRANT EXECUTE ON sp_DemDKTheoHK TO PGV, NHOM_SV;
+GRANT EXECUTE ON sp_KiemTraDiemCK TO PGV, NHOM_SV;
+GRANT EXECUTE ON sp_LayMaKhoaLTC TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsSVDropdown TO PGV, KHOA;
+GRANT EXECUTE ON sp_DsSVCrossTab TO PGV, KHOA;
+GRANT EXECUTE ON sp_TongSinhVien TO PGV, KHOA;
+GO
+
+PRINT N'=== sp_crud.sql: TẤT CẢ STORED PROCEDURES ĐÃ ĐƯỢC TẠO THÀNH CÔNG ===';
+GO

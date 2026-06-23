@@ -37,29 +37,19 @@ public class DangKyController {
         // PGV/KHOA: load DS lớp HC để chọn
         if ("PGV".equals(nhomQuyen) || "KHOA".equals(nhomQuyen)) {
             String maKhoa = (String) session.getAttribute("maKhoa");
+            // sp_DsLopHocChinh trả về MALOP, TENLOP, MAKHOA, SISO
             List<Map<String, Object>> dsLopHC;
             if ("PGV".equals(nhomQuyen) && ("ALL".equals(maKhoa) || maKhoa == null)) {
-                dsLopHC = jdbc.queryForList(
-                        "SELECT L.MALOP, L.TENLOP, L.MAKHOA, " +
-                                "(SELECT COUNT(*) FROM SINHVIEN SV WHERE SV.MALOP=L.MALOP) AS SISO " +
-                                "FROM LOP L ORDER BY L.MALOP");
+                dsLopHC = jdbc.queryForList("EXEC sp_DsLopHocChinh NULL");
             } else {
-                dsLopHC = jdbc.queryForList(
-                        "SELECT L.MALOP, L.TENLOP, L.MAKHOA, " +
-                                "(SELECT COUNT(*) FROM SINHVIEN SV WHERE SV.MALOP=L.MALOP) AS SISO " +
-                                "FROM LOP L WHERE L.MAKHOA=? ORDER BY L.MALOP",
-                        maKhoa);
+                dsLopHC = jdbc.queryForList("EXEC sp_DsLopHocChinh ?", maKhoa);
             }
             model.addAttribute("dsLopHC", dsLopHC);
 
-            // Load DS SV trong lớp đang chọn
+            // Load DS SV trong lớp đang chọn — sp_DsSVTrongLop trả về MASV, HO, TEN, MALOP, DANGHIHOC, KHOAHOC
             String selectedLopHC = (String) session.getAttribute("selectedLopHC");
             if (selectedLopHC != null && !selectedLopHC.isEmpty()) {
-                List<Map<String, Object>> dsSvLop = jdbc.queryForList(
-                        "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC, L.KHOAHOC " +
-                                "FROM SINHVIEN SV JOIN LOP L ON SV.MALOP=L.MALOP " +
-                                "WHERE SV.MALOP=? ORDER BY SV.TEN, SV.HO",
-                        selectedLopHC);
+                List<Map<String, Object>> dsSvLop = jdbc.queryForList("EXEC sp_DsSVTrongLop ?", selectedLopHC);
 
                 int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
                 for (Map<String, Object> sv : dsSvLop) {
@@ -92,11 +82,8 @@ public class DangKyController {
             return "dangky";
         }
 
-        // Thông tin SV đang chọn
-        List<Map<String, Object>> svInfoList = jdbc.queryForList(
-                "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, SV.DANGHIHOC, L.TENLOP, L.MAKHOA, L.KHOAHOC " +
-                        "FROM SINHVIEN SV JOIN LOP L ON SV.MALOP=L.MALOP WHERE SV.MASV=?",
-                masv);
+        // Thông tin SV đang chọn — sp_ThongTinSV trả về MASV, HO, TEN, MALOP, DANGHIHOC, TENLOP, MAKHOA, KHOAHOC
+        List<Map<String, Object>> svInfoList = jdbc.queryForList("EXEC sp_ThongTinSV ?", masv);
         if (!svInfoList.isEmpty()) {
             Map<String, Object> svInfo = svInfoList.get(0);
             String kh = svInfo.get("KHOAHOC") != null ? svInfo.get("KHOAHOC").toString().trim() : "";
@@ -132,18 +119,8 @@ public class DangKyController {
         model.addAttribute("nienkhoa", nk);
         model.addAttribute("hocky", hk);
 
-        List<Map<String, Object>> dsltc = jdbc.queryForList(
-                "SELECT LTC.MALTC, MH.MAMH, MH.TENMH, LTC.NHOM, LTC.SOSVTOITHIEU, " +
-                        "MH.SOTIET_LT, MH.SOTIET_TH, " +
-                        "GV.HO + ' ' + GV.TEN AS HOTENGV, " +
-                        "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK "
-                        +
-                        "FROM LOPTINCHI LTC " +
-                        "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                        "JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV " +
-                        "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.HUYLOP=0 " +
-                        "ORDER BY MH.TENMH, LTC.NHOM",
-                nk, hk);
+        // sp_DsLopTinChiMo trả về MALTC, MAMH, TENMH, NHOM, SOSVTOITHIEU, SOTIET_LT, SOTIET_TH, HOTENGV, SOSVDK
+        List<Map<String, Object>> dsltc = jdbc.queryForList("EXEC sp_DsLopTinChiMo ?, ?", nk, hk);
 
         // Tính tín chỉ cho mỗi LTC
         for (Map<String, Object> ltc : dsltc) {
@@ -156,24 +133,12 @@ public class DangKyController {
         }
         model.addAttribute("dsltc", dsltc);
 
-        // DS đã đăng ký
-        List<Map<String, Object>> daDangKy = jdbc.queryForList(
-                "SELECT DK.MALTC FROM DANGKY DK WHERE DK.MASV=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)", masv);
+        // DS đã đăng ký — sp_DsDaKy trả về MALTC
+        List<Map<String, Object>> daDangKy = jdbc.queryForList("EXEC sp_DsDaKy ?", masv);
         model.addAttribute("daDangKy", daDangKy);
 
-        // DS LTC đã đăng ký — tất cả niên khóa
-        List<Map<String, Object>> myLTC = jdbc.queryForList(
-                "SELECT LTC.MALTC, LTC.NIENKHOA, LTC.HOCKY, MH.TENMH, LTC.NHOM, " +
-                        "MH.SOTIET_LT, MH.SOTIET_TH, " +
-                        "CASE WHEN DK.DIEM_CK IS NOT NULL THEN " +
-                        "  ROUND(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK), 2) " +
-                        "  ELSE NULL END AS DIEM_HM " +
-                        "FROM DANGKY DK " +
-                        "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                        "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                        "WHERE DK.MASV=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                        "ORDER BY LTC.NIENKHOA DESC, LTC.HOCKY DESC, MH.TENMH",
-                masv);
+        // DS LTC đã đăng ký — sp_DsDangKyTheoSV trả về MALTC, NIENKHOA, HOCKY, TENMH, NHOM, SOTIET_LT, SOTIET_TH, DIEM_HM
+        List<Map<String, Object>> myLTC = jdbc.queryForList("EXEC sp_DsDangKyTheoSV ?", masv);
 
         for (Map<String, Object> m : myLTC) {
             int lt = m.get("SOTIET_LT") != null ? ((Number) m.get("SOTIET_LT")).intValue() : 0;
@@ -185,13 +150,9 @@ public class DangKyController {
         }
         model.addAttribute("myLTC", myLTC);
 
-        // Đếm số môn đã ĐK trong HK hiện tại
-        int daDangKyHK = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM DANGKY DK " +
-                        "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                        "WHERE DK.MASV=? AND LTC.NIENKHOA=? AND LTC.HOCKY=? " +
-                        "AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)",
-                Integer.class, masv, nk, hk);
+        // Đếm số môn đã ĐK trong HK hiện tại — sp_DemDKTheoHK trả về SO_DK
+        List<Map<String, Object>> dkHKRows = jdbc.queryForList("EXEC sp_DemDKTheoHK ?, ?, ?", masv, nk, hk);
+        int daDangKyHK = dkHKRows.isEmpty() ? 0 : ((Number) dkHKRows.get(0).get("SO_DK")).intValue();
         model.addAttribute("daDangKyHK", daDangKyHK);
 
         return "dangky";
@@ -216,8 +177,8 @@ public class DangKyController {
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
-            Long count = jdbc.queryForObject("SELECT COUNT(*) FROM SINHVIEN WHERE MASV=?", Long.class, masv.trim());
-            if (count == 0) {
+            List<Map<String, Object>> svRows = jdbc.queryForList("EXEC sp_ThongTinSV ?", masv.trim());
+            if (svRows.isEmpty()) {
                 ra.addFlashAttribute("error", "Không tìm thấy sinh viên với mã: " + masv);
                 session.removeAttribute("selectedMasv");
             } else {
@@ -256,11 +217,8 @@ public class DangKyController {
         final int MAX_MON_PER_HK = 8;
 
         try {
-            int alreadyRegistered = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM DANGKY DK JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                            "WHERE DK.MASV=? AND LTC.NIENKHOA=? AND LTC.HOCKY=? " +
-                            "AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)",
-                    Integer.class, masv, nienkhoa.trim(), hocky);
+            List<Map<String, Object>> dkHKRows2 = jdbc.queryForList("EXEC sp_DemDKTheoHK ?, ?, ?", masv, nienkhoa.trim(), hocky);
+            int alreadyRegistered = dkHKRows2.isEmpty() ? 0 : ((Number) dkHKRows2.get(0).get("SO_DK")).intValue();
 
             int newCount = (selectedLtcs != null) ? selectedLtcs.size() : 0;
             if (alreadyRegistered + newCount > MAX_MON_PER_HK) {
@@ -312,8 +270,8 @@ public class DangKyController {
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
         try {
-            List<Map<String, Object>> rows = jdbc.queryForList("SELECT DIEM_CK FROM DANGKY WHERE MALTC=? AND MASV=?",
-                    maltc, masv);
+            // sp_KiemTraDiemCK trả về DIEM_CK (null nếu chưa có)
+            List<Map<String, Object>> rows = jdbc.queryForList("EXEC sp_KiemTraDiemCK ?, ?", maltc, masv);
             if (!rows.isEmpty() && rows.get(0).get("DIEM_CK") != null) {
                 ra.addFlashAttribute("error", "Không thể hủy — môn này đã có điểm cuối kỳ!");
             } else {

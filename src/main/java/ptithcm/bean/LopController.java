@@ -85,30 +85,25 @@ public class LopController {
                 ra.addFlashAttribute("error", "Lỗi: Không được thêm lớp cho khóa học trong quá khứ (" + khoaHoc + " < " + currentYear + ")!");
                 return "redirect:/lop?malop=" + maLop.trim();
             }
-            // Check duplicate MALOP
-            int count = jdbc.queryForObject("SELECT COUNT(*) FROM LOP WHERE MALOP=?", Integer.class, maLop.trim());
-            if (count > 0) {
-                ra.addFlashAttribute("error", "Lỗi: Mã lớp " + maLop.trim() + " đã tồn tại!");
-                return "redirect:/lop?malop=" + maLop.trim();
-            }
+            // sp_ThemLop kiểm tra trùng MALOP và TENLOP, raise error nếu trùng
         } else {
-            // Update: check if trying to change MAKHOA or KHOAHOC when students exist
-            int svCount = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM SINHVIEN WHERE MALOP=?", Integer.class, maLop.trim());
+            // Update: sp_SuaLop tự kiểm tra SV và MAKHOA/KHOAHOC, raise error nếu vi phạm.
+            // Để hiển thị thông báo thân thiện, kiểm tra trước ở Java.
+            List<Map<String, Object>> sisoRows = jdbc.queryForList("EXEC sp_DemSinhVienTheoLop ?", maLop.trim());
+            int svCount = sisoRows.isEmpty() ? 0 : ((Number) sisoRows.get(0).get("SISO")).intValue();
             if (svCount > 0) {
-                // Get current MAKHOA and KHOAHOC
-                Map<String, Object> currentClass = jdbc.queryForMap(
-                    "SELECT MAKHOA, KHOAHOC FROM LOP WHERE MALOP=?", maLop.trim());
-                String currentMaKhoa = currentClass.get("MAKHOA") != null ? currentClass.get("MAKHOA").toString().trim() : "";
-                String currentKhoaHoc = currentClass.get("KHOAHOC") != null ? currentClass.get("KHOAHOC").toString().trim() : "";
-                
-                if (!maKhoa.trim().equals(currentMaKhoa)) {
-                    ra.addFlashAttribute("error", "Lỗi: Không được đổi khoa cho lớp " + maLop.trim() + " vì đã có sinh viên!");
-                    return "redirect:/lop?malop=" + maLop.trim();
-                }
-                if (!kh.equals(currentKhoaHoc)) {
-                    ra.addFlashAttribute("error", "Lỗi: Không được đổi khóa học cho lớp " + maLop.trim() + " vì đã có sinh viên!");
-                    return "redirect:/lop?malop=" + maLop.trim();
+                List<Map<String, Object>> lopRows = jdbc.queryForList("EXEC sp_DsLop ?", maLop.trim());
+                if (!lopRows.isEmpty()) {
+                    String currentMaKhoa = lopRows.get(0).get("MAKHOA") != null ? lopRows.get(0).get("MAKHOA").toString().trim() : "";
+                    String currentKhoaHoc = lopRows.get(0).get("KHOAHOC") != null ? lopRows.get(0).get("KHOAHOC").toString().trim() : "";
+                    if (!maKhoa.trim().equals(currentMaKhoa)) {
+                        ra.addFlashAttribute("error", "Lỗi: Không được đổi khoa cho lớp " + maLop.trim() + " vì đã có sinh viên!");
+                        return "redirect:/lop?malop=" + maLop.trim();
+                    }
+                    if (!kh.equals(currentKhoaHoc)) {
+                        ra.addFlashAttribute("error", "Lỗi: Không được đổi khóa học cho lớp " + maLop.trim() + " vì đã có sinh viên!");
+                        return "redirect:/lop?malop=" + maLop.trim();
+                    }
                 }
             }
         }
@@ -138,24 +133,29 @@ public class LopController {
             return "redirect:/home";
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
-        
-        // Check student count
-        int svCount = jdbc.queryForObject(
-            "SELECT COUNT(*) FROM SINHVIEN WHERE MALOP=?", Integer.class, maLop.trim());
-        if (svCount > 0) {
-            ra.addFlashAttribute("error", "Không thể xóa lớp " + maLop.trim() + " vì đã có " + svCount + " sinh viên! Xóa chỉ cho lớp tạo nhầm, chưa có SV.");
-            return "redirect:/lop?malop=" + maLop.trim();
-        }
-        
-        // Check if graduated
+
+        // Check student count via SP
         try {
-            String khoaHoc = jdbc.queryForObject("SELECT KHOAHOC FROM LOP WHERE MALOP=?", String.class, maLop.trim());
-            if (khoaHoc != null && khoaHoc.length() >= 9) {
-                int endYear = Integer.parseInt(khoaHoc.substring(5, 9));
-                int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-                if (endYear <= currentYear) {
-                    ra.addFlashAttribute("error", "Không thể xóa lớp " + maLop.trim() + " vì đã tốt nghiệp (khóa " + khoaHoc + "). Dữ liệu lịch sử phải được giữ lại.");
-                    return "redirect:/lop?malop=" + maLop.trim();
+            List<Map<String, Object>> sisoRows = jdbc.queryForList("EXEC sp_DemSinhVienTheoLop ?", maLop.trim());
+            int svCount = sisoRows.isEmpty() ? 0 : ((Number) sisoRows.get(0).get("SISO")).intValue();
+            if (svCount > 0) {
+                ra.addFlashAttribute("error", "Không thể xóa lớp " + maLop.trim() + " vì đã có " + svCount + " sinh viên! Xóa chỉ cho lớp tạo nhầm, chưa có SV.");
+                return "redirect:/lop?malop=" + maLop.trim();
+            }
+        } catch (Exception e) { /* ignore */ }
+
+        // Check if graduated — get KHOAHOC from sp_DsLop
+        try {
+            List<Map<String, Object>> lopRows = jdbc.queryForList("EXEC sp_DsLop ?", maLop.trim());
+            if (!lopRows.isEmpty()) {
+                String khoaHoc = lopRows.get(0).get("KHOAHOC") != null ? lopRows.get(0).get("KHOAHOC").toString() : "";
+                if (khoaHoc.length() >= 9) {
+                    int endYear = Integer.parseInt(khoaHoc.substring(5, 9));
+                    int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+                    if (endYear <= currentYear) {
+                        ra.addFlashAttribute("error", "Không thể xóa lớp " + maLop.trim() + " vì đã tốt nghiệp (khóa " + khoaHoc + "). Dữ liệu lịch sử phải được giữ lại.");
+                        return "redirect:/lop?malop=" + maLop.trim();
+                    }
                 }
             }
         } catch (Exception e) { /* ignore parse errors */ }
@@ -172,24 +172,19 @@ public class LopController {
 
     private void loadData(HttpSession session, ModelMap model) {
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
-        String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         String maKhoa = (String) session.getAttribute("maKhoa");
 
-        String baseQuery = "SELECT L.*, K.TENKHOA FROM LOP L JOIN KHOA K ON L.MAKHOA=K.MAKHOA ";
+        // sp_DsLop trả về MALOP, TENLOP, KHOAHOC, MAKHOA, TENKHOA, SISO
         List<Map<String, Object>> dslop;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
-            dslop = jdbc.queryForList(baseQuery + "ORDER BY L.MALOP");
+            dslop = jdbc.queryForList("EXEC sp_DsLop NULL");
         } else {
-            dslop = jdbc.queryForList(baseQuery + "WHERE L.MAKHOA=? ORDER BY L.MALOP", maKhoa);
+            dslop = jdbc.queryForList("EXEC sp_DsLop ?", maKhoa);
         }
 
         int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
         int totalLop = dslop.size(), dangHoc = 0, daTotNghiep = 0;
         for (Map<String, Object> lop : dslop) {
-            try {
-                int siso = jdbc.queryForObject("SELECT COUNT(*) FROM SINHVIEN WHERE MALOP=?", Integer.class, lop.get("MALOP"));
-                lop.put("SISO", siso);
-            } catch (Exception e) { lop.put("SISO", 0); }
             String kh = lop.get("KHOAHOC") != null ? lop.get("KHOAHOC").toString() : "";
             int tn = 0;
             if (kh.length() >= 9) {
@@ -203,8 +198,7 @@ public class LopController {
         model.addAttribute("dangHoc", dangHoc);
         model.addAttribute("daTotNghiep", daTotNghiep);
 
-        List<Map<String, Object>> khoaList = jdbc.queryForList(
-                "SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA");
-        model.addAttribute("khoaList", khoaList);
+        // sp_DsKhoaDropdown trả về MAKHOA, TENKHOA
+        model.addAttribute("khoaList", jdbc.queryForList("EXEC sp_DsKhoaDropdown"));
     }
 }

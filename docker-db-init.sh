@@ -14,11 +14,15 @@ for i in {1..50}; do
         echo "Running sp_and_views.sql..."
         /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 123456 -i /usr/config/sql/sp_and_views.sql
         
-        # 3. Tạo login, phân quyền bảo mật (khoa_all, pgv_admin, sv)
+        # 3. Tạo các Stored Procedures CRUD mới
+        echo "Running sp_crud.sql..."
+        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 123456 -i /usr/config/sql/sp_crud.sql
+        
+        # 4. Tạo login, phân quyền bảo mật (khoa_all, pgv_admin, sv)
         echo "Running setup_security.sql..."
         /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 123456 -i /usr/config/sql/setup_security.sql
         
-        # 4. Sinh dữ liệu mẫu đầy đủ
+        # 5. Sinh dữ liệu mẫu đầy đủ
         echo "Running mock_data_full.sql..."
         /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 123456 -i /usr/config/sql/mock_data_full.sql
         

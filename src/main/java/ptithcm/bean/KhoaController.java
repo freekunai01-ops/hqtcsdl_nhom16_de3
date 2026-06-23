@@ -26,17 +26,9 @@ public class KhoaController {
         }
         
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
-        List<Map<String, Object>> khoaList = jdbc.queryForList(
-                "SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA");
-        
-        for (Map<String, Object> k : khoaList) {
-            String mk = (String) k.get("MAKHOA");
-            int lopCount = jdbc.queryForObject("SELECT COUNT(*) FROM LOP WHERE MAKHOA=?", Integer.class, mk);
-            int gvCount = jdbc.queryForObject("SELECT COUNT(*) FROM GIANGVIEN WHERE MAKHOA=?", Integer.class, mk);
-            k.put("LOP_COUNT", lopCount);
-            k.put("GV_COUNT", gvCount);
-        }
-        
+        // sp_DsKhoa trả về MAKHOA, TENKHOA, LOP_COUNT, GV_COUNT
+        List<Map<String, Object>> khoaList = jdbc.queryForList("EXEC sp_DsKhoa");
+
         model.addAttribute("khoaList", khoaList);
         model.addAttribute("totalKhoa", khoaList.size());
         model.addAttribute("selectedMakhoa", makhoa != null ? makhoa.trim() : "");

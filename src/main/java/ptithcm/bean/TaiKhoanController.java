@@ -33,20 +33,13 @@ public class TaiKhoanController {
         List<Map<String, Object>> dsTaiKhoan = jdbc.queryForList("EXEC sp_DanhSachTaiKhoan");
         model.addAttribute("dsTaiKhoan", dsTaiKhoan);
 
-        // Fetch all lecturers
-        List<Map<String, Object>> dsgv = jdbc.queryForList(
-                "SELECT MAGV, HO + ' ' + TEN AS HOTEN, MAKHOA FROM GIANGVIEN ORDER BY TEN, HO");
-        model.addAttribute("dsgv", dsgv);
+        // sp_DsGiangVienDropdown trả về MAGV, HOTEN, MAKHOA
+        model.addAttribute("dsgv", jdbc.queryForList("EXEC sp_DsGiangVienDropdown NULL"));
 
-        // Fetch all active students
-        List<Map<String, Object>> dssv = jdbc.queryForList(
-                "SELECT S.MASV, S.HO + ' ' + S.TEN AS HOTEN, L.MAKHOA, S.MALOP " +
-                "FROM SINHVIEN S JOIN LOP L ON S.MALOP = L.MALOP " +
-                "WHERE S.DANGHIHOC = 0 ORDER BY S.TEN, S.HO");
-        model.addAttribute("dssv", dssv);
-        
-        List<Map<String, Object>> khoaList = jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA");
-        model.addAttribute("khoaList", khoaList);
+        // sp_DsSVDropdown trả về MASV, HOTEN, MAKHOA, MALOP (chỉ SV đang học)
+        model.addAttribute("dssv", jdbc.queryForList("EXEC sp_DsSVDropdown"));
+
+        model.addAttribute("khoaList", jdbc.queryForList("EXEC sp_DsKhoaDropdown"));
         model.addAttribute("selectedLogin", login != null ? login.trim() : "");
         return "taikhoan";
     }

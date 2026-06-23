@@ -58,20 +58,12 @@ public class DiemController {
     private void executeLoadDiem(String nienkhoa, int hocky, String mamh, int nhom,
                                  HttpSession session, ModelMap model, JdbcTemplate jdbc,
                                  String maKhoa, String nhomQuyen) {
-        // Tìm LTC
+        // Tìm LTC — sp_TimMALTC / sp_TimMALTCTheoKhoa trả về MALTC, HUYLOP, SOSVTOITHIEU, HOTENGV, TENKHOA, MAKHOA
         List<Map<String, Object>> ltcRows;
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
-            ltcRows = jdbc.queryForList(
-                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA, RTRIM(LTC.MAKHOA) AS MAKHOA " +
-                "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
-                "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=?",
-                nienkhoa.trim(), hocky, mamh.trim(), nhom);
+            ltcRows = jdbc.queryForList("EXEC sp_TimMALTC ?, ?, ?, ?", nienkhoa.trim(), hocky, mamh.trim(), nhom);
         } else {
-            ltcRows = jdbc.queryForList(
-                "SELECT LTC.MALTC, LTC.HUYLOP, LTC.SOSVTOITHIEU, GV.HO + ' ' + GV.TEN AS HOTENGV, K.TENKHOA, RTRIM(LTC.MAKHOA) AS MAKHOA " +
-                "FROM LOPTINCHI LTC JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV JOIN KHOA K ON LTC.MAKHOA=K.MAKHOA " +
-                "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAMH=? AND LTC.NHOM=? AND LTC.MAKHOA=?",
-                nienkhoa.trim(), hocky, mamh.trim(), nhom, maKhoa);
+            ltcRows = jdbc.queryForList("EXEC sp_TimMALTCTheoKhoa ?, ?, ?, ?, ?", nienkhoa.trim(), hocky, mamh.trim(), nhom, maKhoa);
         }
 
         if (ltcRows.isEmpty()) {
@@ -81,17 +73,13 @@ public class DiemController {
         }
 
         Map<String, Object> ltcInfo = ltcRows.get(0);
-        int maltc = (Integer) ltcInfo.get("MALTC");
-        boolean huylop = ltcInfo.get("HUYLOP") != null && (Boolean) ltcInfo.get("HUYLOP");
-        String tenmh = jdbc.queryForObject("SELECT TENMH FROM MONHOC WHERE MAMH=?", String.class, mamh.trim());
+        int maltc = ((Number) ltcInfo.get("MALTC")).intValue();
+        Object huylopObj = ltcInfo.get("HUYLOP");
+        boolean huylop = huylopObj != null && (huylopObj.equals(true) || huylopObj.equals(1));
+        String tenmh = ltcInfo.get("TENMH") != null ? ltcInfo.get("TENMH").toString() : mamh.trim();
 
-        // Load SV + điểm + tính HM server-side
-        List<Map<String, Object>> dssv = jdbc.queryForList(
-            "SELECT DK.MASV, SV.HO + ' ' + SV.TEN AS HOTENSV, SV.MALOP, " +
-            "DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK " +
-            "FROM DANGKY DK JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
-            "WHERE DK.MALTC=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-            "ORDER BY SV.TEN, SV.HO", maltc);
+        // Load SV + điểm — sp_LoadDiemSV trả về MASV, HOTENSV, MALOP, DIEM_CC, DIEM_GK, DIEM_CK
+        List<Map<String, Object>> dssv = jdbc.queryForList("EXEC sp_LoadDiemSV ?", maltc);
 
         // Thống kê
         int totalSV = dssv.size(), daNhap = 0, chuaNhap = 0, dat = 0, rot = 0;
@@ -143,8 +131,9 @@ public class DiemController {
         try {
             if ("KHOA".equals(nhomQuyen)) {
                 String maKhoa = (String) session.getAttribute("maKhoa");
-                String classKhoa = jdbc.queryForObject(
-                    "SELECT RTRIM(MAKHOA) FROM LOPTINCHI WHERE MALTC = ?", String.class, maltc);
+                // sp_LayMaKhoaLTC trả về MAKHOA
+                List<Map<String, Object>> khoaRows = jdbc.queryForList("EXEC sp_LayMaKhoaLTC ?", maltc);
+                String classKhoa = khoaRows.isEmpty() ? null : (khoaRows.get(0).get("MAKHOA") != null ? khoaRows.get(0).get("MAKHOA").toString().trim() : null);
                 if (!"ALL".equals(maKhoa) && !maKhoa.equals(classKhoa)) {
                     ra.addFlashAttribute("error", "Bạn không có quyền ghi điểm cho lớp của khoa khác!");
                     return "redirect:/diem?nienkhoa=" + nienkhoa.trim() + "&hocky=" + hocky + "&mamh=" + mamh.trim() + "&nhom=" + nhom;
@@ -173,13 +162,12 @@ public class DiemController {
     }
 
     private void reloadDropdowns(JdbcTemplate jdbc, String nhomQuyen, String maKhoa, ModelMap model) {
-        model.addAttribute("dsmh", jdbc.queryForList("SELECT MAMH, TENMH FROM MONHOC ORDER BY TENMH"));
-        List<Map<String, Object>> khoaList = jdbc.queryForList("SELECT RTRIM(MAKHOA) AS MAKHOA, TENKHOA FROM KHOA ORDER BY MAKHOA");
-        model.addAttribute("khoaList", khoaList);
+        model.addAttribute("dsmh", jdbc.queryForList("EXEC sp_DsMonHocDropdown"));
+        model.addAttribute("khoaList", jdbc.queryForList("EXEC sp_DsKhoaDropdown"));
         if ("ALL".equals(maKhoa) || maKhoa == null || maKhoa.trim().isEmpty()) {
-            model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI ORDER BY NIENKHOA DESC"));
+            model.addAttribute("dsNienKhoa", jdbc.queryForList("EXEC sp_DsNienKhoa NULL"));
         } else {
-            model.addAttribute("dsNienKhoa", jdbc.queryForList("SELECT DISTINCT NIENKHOA FROM LOPTINCHI WHERE MAKHOA=? ORDER BY NIENKHOA DESC", maKhoa));
+            model.addAttribute("dsNienKhoa", jdbc.queryForList("EXEC sp_DsNienKhoa ?", maKhoa));
         }
     }
 
