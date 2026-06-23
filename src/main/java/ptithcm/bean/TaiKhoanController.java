@@ -30,27 +30,7 @@ public class TaiKhoanController {
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
 
         // Fetch accounts including both Lecturers and Students with their status
-        List<Map<String, Object>> dsTaiKhoan = jdbc.queryForList(
-                "SELECT T.Login, T.MatKhau, T.NhomQuyen, T.MAGV, T.TrangThai, T.NgayTao, " +
-                "       COALESCE(T.MAKHOA, G.MAKHOA, L.MAKHOA) AS MAKHOA, " +
-                "       COALESCE(G.HO + ' ' + G.TEN, S.HO + ' ' + S.TEN, " +
-                "                CASE T.Login " +
-                "                     WHEN 'pgv_admin' THEN N'Quản trị PGV' " +
-                "                     WHEN 'admin' THEN N'Quản trị PGV' " +
-                "                     WHEN 'khoa_all' THEN N'Quản lý Khoa' " +
-                "                     WHEN 'sv' THEN N'Sinh viên (chung)' " +
-                "                     ELSE T.Login " +
-                "                END) AS HOTEN, " +
-                "       CASE " +
-                "            WHEN G.MAGV IS NOT NULL THEN N'GV - ' + G.HO + ' ' + G.TEN " +
-                "            WHEN S.MASV IS NOT NULL THEN N'SV - ' + S.HO + ' ' + S.TEN " +
-                "            ELSE N'Hệ thống' " +
-                "       END AS DOITUONG " +
-                "FROM TaiKhoan T " +
-                "LEFT JOIN GIANGVIEN G ON T.MAGV = G.MAGV " +
-                "LEFT JOIN SINHVIEN S ON T.Login = S.MASV OR T.MAGV = S.MASV " +
-                "LEFT JOIN LOP L ON S.MALOP = L.MALOP " +
-                "ORDER BY T.Login");
+        List<Map<String, Object>> dsTaiKhoan = jdbc.queryForList("EXEC sp_DanhSachTaiKhoan");
         model.addAttribute("dsTaiKhoan", dsTaiKhoan);
 
         // Fetch all lecturers
@@ -89,7 +69,6 @@ public class TaiKhoanController {
             return "redirect:/taikhoan";
         }
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);
-        String mkhoa = "PGV".equals(nhomQuyen.trim()) ? null : (maKhoa != null && !maKhoa.trim().isEmpty() ? maKhoa.trim() : null);
         
         // If role is SV, the username is student's MASV
         String linkedUser = magv;
@@ -100,41 +79,59 @@ public class TaiKhoanController {
         try {
             // Check for default system accounts (which don't have a linked user)
             if (linkedUser == null || linkedUser.trim().isEmpty()) {
-                jdbc.update("UPDATE TaiKhoan SET MatKhau=?, NhomQuyen=?, MAKHOA=?, TrangThai=? WHERE Login=?",
-                        matkhau, nhomQuyen.trim(), mkhoa, trangthai, login.trim());
-                try {
-                    jdbc.execute("ALTER LOGIN [" + login.trim() + "] WITH PASSWORD = '" + matkhau.replace("'", "''") + "'");
-                } catch (Exception ex) {}
+                if (matkhau != null && !matkhau.trim().isEmpty()) {
+                    try {
+                        jdbc.execute("ALTER LOGIN [" + login.trim() + "] WITH PASSWORD = '" + matkhau.replace("'", "''") + "'");
+                    } catch (Exception ex) {}
+                }
                 syncLoginStatus(jdbc, login.trim(), trangthai);
                 ra.addFlashAttribute("success", "Cập nhật tài khoản hệ thống thành công!");
                 return "redirect:/taikhoan?login=" + login.trim();
             }
 
-            Long count = jdbc.queryForObject("SELECT COUNT(*) FROM TaiKhoan WHERE MAGV=?", Long.class, linkedUser.trim());
+            Long count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM sys.database_principals WHERE name = ?",
+                Long.class, linkedUser.trim());
             if (count == 0) {
                 // Using stored procedure sp_TaoTaiKhoan
                 // Map "SV" -> "NHOM_SV" database role, otherwise use the role directly
                 String dbRole = "SV".equals(nhomQuyen.trim()) ? "NHOM_SV" : nhomQuyen.trim();
                 jdbc.update("EXEC sp_TaoTaiKhoan ?, ?, ?, ?", 
                         login.trim(), matkhau, linkedUser.trim(), dbRole);
-                jdbc.update("UPDATE TaiKhoan SET TrangThai=? WHERE Login=?", trangthai, login.trim());
                 syncLoginStatus(jdbc, login.trim(), trangthai);
                 ra.addFlashAttribute("success", "Tạo tài khoản và phân quyền SQL Server thành công!");
             } else {
                 // Get old login name
                 String oldLogin = "";
                 try {
-                    oldLogin = jdbc.queryForObject("SELECT Login FROM TaiKhoan WHERE MAGV=?", String.class, linkedUser.trim()).trim();
+                    oldLogin = jdbc.queryForObject(
+                        "SELECT sp.name FROM sys.server_principals sp " +
+                        "JOIN sys.database_principals dp ON sp.sid = dp.sid " +
+                        "WHERE dp.name = ?",
+                        String.class, linkedUser.trim()).trim();
                 } catch (Exception e) {}
 
-                jdbc.update("UPDATE TaiKhoan SET Login=?, MatKhau=?, NhomQuyen=?, MAKHOA=?, TrangThai=? WHERE MAGV=?",
-                        login.trim(), matkhau, nhomQuyen.trim(), mkhoa, trangthai, linkedUser.trim());
+                // Cập nhật database role nếu thay đổi
+                String dbRole = "SV".equals(nhomQuyen.trim()) ? "NHOM_SV" : nhomQuyen.trim();
+                try {
+                    String oldRole = jdbc.queryForObject(
+                        "SELECT r.name FROM sys.database_role_members rm " +
+                        "JOIN sys.database_principals r ON rm.role_principal_id = r.principal_id " +
+                        "JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id " +
+                        "WHERE m.name = ?", String.class, linkedUser.trim());
+                    if (oldRole != null && !oldRole.trim().equalsIgnoreCase(dbRole)) {
+                        jdbc.execute("ALTER ROLE [" + oldRole + "] DROP MEMBER [" + linkedUser.trim() + "]");
+                        jdbc.execute("ALTER ROLE [" + dbRole + "] ADD MEMBER [" + linkedUser.trim() + "]");
+                    }
+                } catch (Exception ex) {}
                 
                 // Sync SQL Login Password and Status
                 if (!oldLogin.isEmpty()) {
-                    try {
-                        jdbc.execute("ALTER LOGIN [" + oldLogin + "] WITH PASSWORD = '" + matkhau.replace("'", "''") + "'");
-                    } catch (Exception ex) {}
+                    if (matkhau != null && !matkhau.trim().isEmpty()) {
+                        try {
+                            jdbc.execute("ALTER LOGIN [" + oldLogin + "] WITH PASSWORD = '" + matkhau.replace("'", "''") + "'");
+                        } catch (Exception ex) {}
+                    }
                     syncLoginStatus(jdbc, oldLogin, trangthai);
                 }
                 ra.addFlashAttribute("success", "Cập nhật tài khoản thành công!");
@@ -160,12 +157,20 @@ public class TaiKhoanController {
         
         if (mGV.isEmpty() && !loginName.isEmpty()) {
             try {
-                mGV = jdbc.queryForObject("SELECT MAGV FROM TaiKhoan WHERE Login=?", String.class, loginName);
+                mGV = jdbc.queryForObject(
+                    "SELECT dp.name FROM sys.server_principals sp " +
+                    "JOIN sys.database_principals dp ON sp.sid = dp.sid " +
+                    "WHERE sp.name = ?",
+                    String.class, loginName);
             } catch (Exception e) {}
         }
         if (loginName.isEmpty() && !mGV.isEmpty()) {
             try {
-                loginName = jdbc.queryForObject("SELECT Login FROM TaiKhoan WHERE MAGV=?", String.class, mGV);
+                loginName = jdbc.queryForObject(
+                    "SELECT sp.name FROM sys.server_principals sp " +
+                    "JOIN sys.database_principals dp ON sp.sid = dp.sid " +
+                    "WHERE dp.name = ?",
+                    String.class, mGV);
             } catch (Exception e) {}
         }
 
@@ -175,12 +180,6 @@ public class TaiKhoanController {
         }
 
         try {
-            if (!mGV.isEmpty()) {
-                jdbc.update("DELETE FROM TaiKhoan WHERE MAGV=?", mGV);
-            } else if (!loginName.isEmpty()) {
-                jdbc.update("DELETE FROM TaiKhoan WHERE Login=?", loginName);
-            }
-
             // Clean up SQL Login & Database User
             if (!loginName.isEmpty()) {
                 try {

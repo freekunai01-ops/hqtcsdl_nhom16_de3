@@ -76,7 +76,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON MONHOC TO PGV;
 GRANT SELECT, INSERT, UPDATE, DELETE ON GIANGVIEN TO PGV;
 GRANT SELECT, INSERT, UPDATE, DELETE ON LOPTINCHI TO PGV;
 GRANT SELECT, INSERT, UPDATE, DELETE ON DANGKY TO PGV;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TaiKhoan TO PGV;
 GO
 
 -- ===== KHOA - QUYỀN HẠN CHẾ =====
@@ -89,7 +88,6 @@ GRANT SELECT ON GIANGVIEN TO KHOA;
 GRANT SELECT ON LOPTINCHI TO KHOA;
 -- Được nhập điểm: SELECT + UPDATE trên bảng DANGKY
 GRANT SELECT, UPDATE ON DANGKY TO KHOA;
-GRANT SELECT ON TaiKhoan TO KHOA;
 GO
 -- KHÔNG ĐƯỢC: INSERT/UPDATE/DELETE trên KHOA, LOP, GIANGVIEN, SINHVIEN, LOPTINCHI, MONHOC
 
@@ -110,20 +108,6 @@ GO
 UPDATE SINHVIEN SET PASSWORD = '123456' WHERE PASSWORD IS NULL OR PASSWORD = '';
 GO
 
--- =============================================
--- 7. ĐẢM BẢO DỮ LIỆU TAIKHOAN CÓ SẴN
--- =============================================
-
--- PGV (toàn quyền)
-IF NOT EXISTS (SELECT * FROM TaiKhoan WHERE Login = 'pgv_admin')
-    INSERT INTO TaiKhoan (Login, MatKhau, NhomQuyen, MAKHOA, TrangThai, NgayTao)
-    VALUES ('pgv_admin', '123456', 'PGV', NULL, 'Active', GETDATE());
-GO
-
--- KHOA chung (xem tất cả read-only, MAKHOA = NULL → app mặc định ALL)
-IF NOT EXISTS (SELECT * FROM TaiKhoan WHERE Login = 'khoa_all')
-    INSERT INTO TaiKhoan (Login, MatKhau, NhomQuyen, MAKHOA, TrangThai, NgayTao)
-    VALUES ('khoa_all', '123456', 'KHOA', NULL, 'Active', GETDATE());
 -- ===== CẤP QUYỀN THỰC THI STORED PROCEDURES =====
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[sp_ThongTinDangNhap]') AND type in (N'P', N'PC'))
     GRANT EXECUTE ON [dbo].[sp_ThongTinDangNhap] TO PGV, KHOA, NHOM_SV;

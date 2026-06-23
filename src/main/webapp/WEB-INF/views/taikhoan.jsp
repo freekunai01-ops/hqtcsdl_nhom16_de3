@@ -813,6 +813,44 @@
         }
     });
 
+    function btnXoaTk() {
+        var login = document.getElementById('inputLogin').value.trim();
+        var magv = document.getElementById('inputMaGV').value.trim();
+        var masv = document.getElementById('inputMaSV').value.trim();
+        
+        if (!login) {
+            alert('Vui lòng chọn tài khoản muốn xóa!');
+            return;
+        }
+        
+        if (login === 'pgv_admin' || login === 'admin' || login === 'sv' || login === 'khoa_all') {
+            alert('Không được xóa tài khoản hệ thống mặc định!');
+            return;
+        }
+        
+        if (confirm('Bạn có chắc chắn muốn xóa tài khoản ' + login + ' không? (Thao tác này cũng sẽ xóa login/user tương ứng trong SQL Server)')) {
+            // Tạo form tạm để submit POST
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '${pageContext.request.contextPath}/taikhoan/delete';
+            
+            var inputLogin = document.createElement('input');
+            inputLogin.type = 'hidden';
+            inputLogin.name = 'login';
+            inputLogin.value = login;
+            form.appendChild(inputLogin);
+            
+            var inputMagv = document.createElement('input');
+            inputMagv.type = 'hidden';
+            inputMagv.name = 'magv';
+            inputMagv.value = magv || masv;
+            form.appendChild(inputMagv);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
     function btnThoat(url) {
         window.location.href = url;
     }

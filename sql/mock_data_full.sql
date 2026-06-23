@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- QLDSV_HTC - Mock Data v2 (123 LTC, 5 khoa, chuẩn PTIT)
 -- Ngày chuẩn: 2026-06-23
 -- ============================================================
@@ -8,7 +8,6 @@ GO
 
 DELETE FROM DANGKY;
 DELETE FROM LOPTINCHI;
-DELETE FROM TaiKhoan;
 DELETE FROM SINHVIEN;
 DELETE FROM LOP;
 DELETE FROM GIANGVIEN;
@@ -85,14 +84,7 @@ INSERT INTO LOP VALUES ('N22DCKT01',N'Kế toán K22','2022-2027','KT');
 INSERT INTO LOP VALUES ('N22DCCK01',N'Cơ khí K22','2022-2027','CK');
 GO
 
--- 5. TAIKHOAN
-INSERT INTO TaiKhoan (Login,MatKhau,NhomQuyen,MAGV,MAKHOA,TrangThai,NgayTao)
-VALUES ('pgv_admin','123456','PGV',NULL,NULL,'Active','2020-01-01');
-INSERT INTO TaiKhoan (Login,MatKhau,NhomQuyen,MAGV,MAKHOA,TrangThai,NgayTao)
-VALUES ('khoa_all','123456','KHOA',NULL,NULL,'Active','2020-01-01');
-INSERT INTO TaiKhoan (Login,MatKhau,NhomQuyen,MAGV,MAKHOA,TrangThai,NgayTao)
-VALUES ('khoa_cntt','123456','KHOA',NULL,'CNTT','Active','2020-01-01');
-GO
+
 
 -- 6. SINHVIEN K20
 DECLARE @i INT, @masv VARCHAR(10), @ho NVARCHAR(50), @ten NVARCHAR(10), @phai BIT;

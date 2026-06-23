@@ -81,12 +81,12 @@ public class GiangVienController {
             if ("add".equals(action)) {
                 int exists = jdbc.queryForObject("SELECT COUNT(*) FROM GIANGVIEN WHERE MAGV=?", Integer.class, magv.trim());
                 if (exists > 0) { ra.addFlashAttribute("error", "Mã GV '" + magv.trim() + "' đã tồn tại!"); return "redirect:/giangvien?magv=" + magv.trim(); }
-                jdbc.update("INSERT INTO GIANGVIEN (MAGV,HO,TEN,HOCVI,HOCHAM,CHUYENMON,MAKHOA) VALUES (?,?,?,?,?,?,?)",
+                jdbc.update("EXEC sp_ThemGiangVien ?,?,?,?,?,?,?",
                         magv.trim(), ho.trim(), ten.trim(), hocvi.trim(), hocham.trim(), chuyenmon.trim(), maKhoa.trim());
                 ra.addFlashAttribute("success", "Thêm giảng viên thành công!");
             } else {
-                jdbc.update("UPDATE GIANGVIEN SET HO=?,TEN=?,HOCVI=?,HOCHAM=?,CHUYENMON=?,MAKHOA=? WHERE MAGV=?",
-                        ho.trim(), ten.trim(), hocvi.trim(), hocham.trim(), chuyenmon.trim(), maKhoa.trim(), magv.trim());
+                jdbc.update("EXEC sp_SuaGiangVien ?,?,?,?,?,?,?",
+                        magv.trim(), ho.trim(), ten.trim(), hocvi.trim(), hocham.trim(), chuyenmon.trim(), maKhoa.trim());
                 ra.addFlashAttribute("success", "Cập nhật giảng viên thành công!");
             }
         } catch (Exception e) { 
@@ -110,7 +110,7 @@ public class GiangVienController {
             }
         } catch (Exception e) {}
         try {
-            jdbc.update("DELETE FROM GIANGVIEN WHERE MAGV=?", magv.trim());
+            jdbc.update("EXEC sp_XoaGiangVien ?", magv.trim());
             ra.addFlashAttribute("success", "Xóa giảng viên thành công!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());

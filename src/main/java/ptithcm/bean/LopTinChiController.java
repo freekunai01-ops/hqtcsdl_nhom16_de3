@@ -137,9 +137,8 @@ public class LopTinChiController {
         String lydo = (lydohuy != null && !lydohuy.trim().isEmpty()) ? lydohuy.trim() : null;
         try {
             if ("add".equals(action)) {
-                jdbc.update("INSERT INTO LOPTINCHI (NIENKHOA,HOCKY,MAMH,NHOM,MAGV,MAKHOA,SOSVTOITHIEU,SOSVTOIDA,HUYLOP,NGAYBATDAU_DK,NGAYKETTHUC_DK,NGAYHETHAN_HUY,LYDOHUY) " +
-                            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                        nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), kh, sosvtoithieu, sosvtoida, huylop,
+                jdbc.update("EXEC sp_ThemLopTinChi ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
+                        nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), kh, sosvtoithieu, sosvtoida, huylop ? 1 : 0,
                         dbBatdau, dbKetthuc, dbHethan, lydo);
                 try {
                     maltc = jdbc.queryForObject("SELECT MALTC FROM LOPTINCHI WHERE NIENKHOA=? AND HOCKY=? AND MAMH=? AND NHOM=?",
@@ -147,10 +146,9 @@ public class LopTinChiController {
                 } catch (Exception e) {}
                 ra.addFlashAttribute("success", "Mở lớp tín chỉ thành công!");
             } else if (maltc != null) {
-                jdbc.update("UPDATE LOPTINCHI SET NIENKHOA=?,HOCKY=?,MAMH=?,NHOM=?,MAGV=?,SOSVTOITHIEU=?,SOSVTOIDA=?,HUYLOP=?," +
-                            "NGAYBATDAU_DK=?,NGAYKETTHUC_DK=?,NGAYHETHAN_HUY=?,LYDOHUY=? WHERE MALTC=?",
-                        nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), sosvtoithieu, sosvtoida, huylop,
-                        dbBatdau, dbKetthuc, dbHethan, lydo, maltc);
+                jdbc.update("EXEC sp_SuaLopTinChi ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
+                        maltc, nienkhoa.trim(), hocky, mamh.trim(), nhom, magv.trim(), sosvtoithieu, sosvtoida, huylop ? 1 : 0,
+                        dbBatdau, dbKetthuc, dbHethan, lydo);
                 ra.addFlashAttribute("success", "Cập nhật lớp tín chỉ thành công!");
             }
         } catch (Exception e) {
@@ -171,7 +169,7 @@ public class LopTinChiController {
         }
         try {
             connHelper.getJdbcTemplate(session)
-                    .update("DELETE FROM LOPTINCHI WHERE MALTC=?", maltc);
+                    .update("EXEC sp_XoaLopTinChi ?", maltc);
             ra.addFlashAttribute("success", "Xóa lớp tín chỉ thành công!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());

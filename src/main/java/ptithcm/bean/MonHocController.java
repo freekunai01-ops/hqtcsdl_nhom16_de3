@@ -95,7 +95,7 @@ public class MonHocController {
                     ra.addFlashAttribute("error", "Mã MH '" + mamh.trim() + "' đã tồn tại!");
                     return "redirect:/monhoc?mamh=" + mamh.trim();
                 }
-                jdbc.update("INSERT INTO MONHOC (MAMH, TENMH, SOTIET_LT, SOTIET_TH) VALUES (?,?,?,?)",
+                jdbc.update("EXEC sp_ThemMonHoc ?, ?, ?, ?",
                         mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                 ra.addFlashAttribute("success", "Thêm môn học thành công!");
             } else {
@@ -128,21 +128,21 @@ public class MonHocController {
                     // Cho phép sửa nếu chỉ sửa tên hoặc số tiết chưa có điểm nhưng đã có LTC
                     if (sotietLT != curLT || sotietTH != curTH) {
                         // Đã có LTC nhưng chưa có điểm — cảnh báo nhưng cho sửa
-                        jdbc.update("UPDATE MONHOC SET TENMH=?, SOTIET_LT=?, SOTIET_TH=? WHERE MAMH=?",
-                                tenmh.trim(), sotietLT, sotietTH, mamh.trim());
+                        jdbc.update("EXEC sp_SuaMonHoc ?, ?, ?, ?",
+                                mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                         ra.addFlashAttribute("success",
                             "Cập nhật thành công! ⚠ Môn đã mở " + ltcCount + " LTC — " +
                             "thay đổi số tiết ảnh hưởng tín chỉ quy đổi trong báo cáo.");
                     } else {
                         // Chỉ sửa tên môn — an toàn tuyệt đối
-                        jdbc.update("UPDATE MONHOC SET TENMH=?, SOTIET_LT=?, SOTIET_TH=? WHERE MAMH=?",
-                                tenmh.trim(), sotietLT, sotietTH, mamh.trim());
+                        jdbc.update("EXEC sp_SuaMonHoc ?, ?, ?, ?",
+                                mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                         ra.addFlashAttribute("success", "Cập nhật tên môn học thành công!");
                     }
                 } else {
                     // Môn chưa từng mở LTC — cho sửa tự do
-                    jdbc.update("UPDATE MONHOC SET TENMH=?, SOTIET_LT=?, SOTIET_TH=? WHERE MAMH=?",
-                            tenmh.trim(), sotietLT, sotietTH, mamh.trim());
+                    jdbc.update("EXEC sp_SuaMonHoc ?, ?, ?, ?",
+                            mamh.trim(), tenmh.trim(), sotietLT, sotietTH);
                     ra.addFlashAttribute("success", "Cập nhật môn học thành công!");
                 }
             }
@@ -189,7 +189,7 @@ public class MonHocController {
         }
 
         try {
-            jdbc.update("DELETE FROM MONHOC WHERE MAMH=?", mamh.trim());
+            jdbc.update("EXEC sp_XoaMonHoc ?", mamh.trim());
             ra.addFlashAttribute("success", "Xóa môn học '" + mamh.trim() + "' thành công!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());

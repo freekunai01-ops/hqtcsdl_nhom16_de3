@@ -12,6 +12,11 @@
             </li>
             <c:if test="${sessionScope.nhomQuyen == 'PGV' || sessionScope.nhomQuyen == 'KHOA'}">
                 <li class="nav-item">
+                    <a class="nav-link" href="${pageContext.request.contextPath}/khoa">
+                        <i class="fas fa-university"></i> Danh mục Khoa
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="${pageContext.request.contextPath}/lop">
                         <i class="fas fa-layer-group"></i> Danh mục Lớp
                     </a>

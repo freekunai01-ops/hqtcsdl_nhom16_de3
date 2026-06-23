@@ -162,28 +162,18 @@ public class SinhVienController {
         String password = masv.trim();
         try {
             if ("add".equals(action)) {
-                // Check duplicate MASV
-                int count = jdbc.queryForObject("SELECT COUNT(*) FROM SINHVIEN WHERE MASV=?", Integer.class, masv.trim());
-                if (count > 0) {
-                    ra.addFlashAttribute("error", "Mã SV " + masv.trim() + " đã tồn tại!");
-                    return "redirect:/sinhvien?malop=" + malop.trim() + "&masv=" + masv.trim();
-                }
-                jdbc.update("INSERT INTO SINHVIEN (MASV,HO,TEN,MALOP,PHAI,NGAYSINH,DIACHI,DANGHIHOC,PASSWORD) " +
-                            "VALUES (?,?,?,?,?,?,?,?,?)",
-                        masv.trim(), ho.trim(), ten.trim(), malop.trim(),
-                        phai ? 1 : 0,
-                        (ngaysinh != null && !ngaysinh.isEmpty()) ? ngaysinh : null,
+                jdbc.update("EXEC sp_ThemSinhVien ?, ?, ?, ?, ?, ?, ?, ?, ?",
+                        masv.trim(), ho.trim(), ten.trim(), phai ? 1 : 0,
                         (diachi != null && !diachi.isEmpty()) ? diachi.trim() : null,
-                        danghihoc ? 1 : 0, password);
+                        (ngaysinh != null && !ngaysinh.isEmpty()) ? ngaysinh : null,
+                        malop.trim(), danghihoc ? 1 : 0, password);
                 ra.addFlashAttribute("success", "Thêm sinh viên thành công!");
             } else {
-                jdbc.update("UPDATE SINHVIEN SET HO=?,TEN=?,MALOP=?,PHAI=?,NGAYSINH=?," +
-                            "DIACHI=?,DANGHIHOC=?,PASSWORD=? WHERE MASV=?",
-                        ho.trim(), ten.trim(), malop.trim(),
-                        phai ? 1 : 0,
-                        (ngaysinh != null && !ngaysinh.isEmpty()) ? ngaysinh : null,
+                jdbc.update("EXEC sp_SuaSinhVien ?, ?, ?, ?, ?, ?, ?, ?",
+                        masv.trim(), ho.trim(), ten.trim(), phai ? 1 : 0,
                         (diachi != null && !diachi.isEmpty()) ? diachi.trim() : null,
-                        danghihoc ? 1 : 0, password, masv.trim());
+                        (ngaysinh != null && !ngaysinh.isEmpty()) ? ngaysinh : null,
+                        malop.trim(), danghihoc ? 1 : 0);
                 ra.addFlashAttribute("success", "Cập nhật sinh viên thành công!");
             }
         } catch (Exception e) {
@@ -211,7 +201,7 @@ public class SinhVienController {
             }
         } catch (Exception e) {}
         try {
-            jdbc.update("DELETE FROM SINHVIEN WHERE MASV=?", masv.trim());
+            jdbc.update("EXEC sp_XoaSinhVien ?", masv.trim());
             ra.addFlashAttribute("success", "Xóa sinh viên thành công!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());

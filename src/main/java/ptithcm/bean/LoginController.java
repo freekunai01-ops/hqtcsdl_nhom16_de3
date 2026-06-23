@@ -140,19 +140,12 @@ public class LoginController {
                 if ("PGV".equals(nhomQuyen)) {
                     maKhoa = "ALL";
                 } else if ("KHOA".equals(nhomQuyen)) {
-                    // KHOA: mặc định xem tất cả, có thể lọc theo khoa
-                    // Thử lấy MAKHOA cụ thể từ TaiKhoan (nếu có)
                     try {
                         String mk = userJdbc.queryForObject(
-                                "SELECT MAKHOA FROM TaiKhoan WHERE Login = ?",
-                                String.class, username.trim());
-                        if (mk != null && !mk.trim().isEmpty()) {
-                            maKhoa = mk.trim();
-                        } else {
-                            maKhoa = "ALL";
-                        }
+                                "SELECT RTRIM(MAKHOA) FROM GIANGVIEN WHERE MAGV = ?",
+                                String.class, userId);
+                        maKhoa = (mk != null && !mk.trim().isEmpty()) ? mk.trim() : "ALL";
                     } catch (Exception e) {
-                        // Không tìm thấy hoặc MAKHOA = NULL → mặc định xem tất cả
                         maKhoa = "ALL";
                     }
                 }

@@ -115,12 +115,12 @@ public class LopController {
 
         try {
             if ("add".equals(action)) {
-                jdbc.update("INSERT INTO LOP (MALOP, TENLOP, KHOAHOC, MAKHOA) VALUES (?, ?, ?, ?)",
+                jdbc.update("EXEC sp_ThemLop ?, ?, ?, ?",
                         maLop.trim(), tenLop.trim(), kh, maKhoa.trim());
                 ra.addFlashAttribute("success", "Thêm lớp " + maLop.trim() + " thành công!");
             } else {
-                jdbc.update("UPDATE LOP SET TENLOP=?, KHOAHOC=?, MAKHOA=? WHERE MALOP=?",
-                        tenLop.trim(), kh, maKhoa.trim(), maLop.trim());
+                jdbc.update("EXEC sp_SuaLop ?, ?, ?, ?",
+                        maLop.trim(), tenLop.trim(), kh, maKhoa.trim());
                 ra.addFlashAttribute("success", "Cập nhật lớp " + maLop.trim() + " thành công!");
             }
         } catch (Exception e) {
@@ -161,7 +161,7 @@ public class LopController {
         } catch (Exception e) { /* ignore parse errors */ }
 
         try {
-            jdbc.update("DELETE FROM LOP WHERE MALOP=?", maLop.trim());
+            jdbc.update("EXEC sp_XoaLop ?", maLop.trim());
             ra.addFlashAttribute("success", "Xóa lớp " + maLop.trim() + " thành công!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Không thể xóa: " + e.getMessage());

@@ -94,39 +94,19 @@ public class BaoCaoController {
         try {
             if ("DS_LTC".equals(reportType)) {
                 List<Map<String, Object>> data;
+                String targetK = "ALL";
                 if ("PGV".equals(sessionNhom)) {
-                    if (selectedKhoa == null || selectedKhoa.isEmpty() || selectedKhoa.equals("ALL")) {
-                        data = jdbc.queryForList(
-                            "SELECT MH.TENMH, LTC.NHOM, GV.HO + ' ' + GV.TEN AS HOTENGV, LTC.SOSVTOITHIEU, " +
-                            "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK " +
-                            "FROM LOPTINCHI LTC " +
-                            "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                            "JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV " +
-                            "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.HUYLOP=0 " +
-                            "ORDER BY MH.TENMH, LTC.NHOM", nienkhoa.trim(), hocky);
-                        model.addAttribute("tenKhoa", "TOÀN TRƯỜNG");
-                    } else {
-                        data = jdbc.queryForList(
-                            "SELECT MH.TENMH, LTC.NHOM, GV.HO + ' ' + GV.TEN AS HOTENGV, LTC.SOSVTOITHIEU, " +
-                            "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK " +
-                            "FROM LOPTINCHI LTC " +
-                            "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                            "JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV " +
-                            "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAKHOA=? AND LTC.HUYLOP=0 " +
-                            "ORDER BY MH.TENMH, LTC.NHOM", nienkhoa.trim(), hocky, selectedKhoa);
+                    if (selectedKhoa != null && !selectedKhoa.isEmpty() && !selectedKhoa.equals("ALL")) {
+                        targetK = selectedKhoa.trim();
                         model.addAttribute("tenKhoa", tenKhoa);
+                    } else {
+                        model.addAttribute("tenKhoa", "TOÀN TRƯỜNG");
                     }
                 } else {
-                    data = jdbc.queryForList(
-                        "SELECT MH.TENMH, LTC.NHOM, GV.HO + ' ' + GV.TEN AS HOTENGV, LTC.SOSVTOITHIEU, " +
-                        "(SELECT COUNT(*) FROM DANGKY DK WHERE DK.MALTC=LTC.MALTC AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL)) AS SOSVDK " +
-                        "FROM LOPTINCHI LTC " +
-                        "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                        "JOIN GIANGVIEN GV ON LTC.MAGV=GV.MAGV " +
-                        "WHERE LTC.NIENKHOA=? AND LTC.HOCKY=? AND LTC.MAKHOA=? AND LTC.HUYLOP=0 " +
-                        "ORDER BY MH.TENMH, LTC.NHOM", nienkhoa.trim(), hocky, sessionKhoa);
+                    targetK = sessionKhoa.trim();
                     model.addAttribute("tenKhoa", gettenKhoa(jdbc, sessionKhoa));
                 }
+                data = jdbc.queryForList("EXEC sp_InDSLTC ?, ?, ?", nienkhoa.trim(), hocky, targetK);
                 model.addAttribute("data", data);
             }
             else if ("DS_SV_DK".equals(reportType)) {
@@ -144,11 +124,7 @@ public class BaoCaoController {
                 } else {
                     Integer maltc = (Integer) ltcRows.get(0).get("MALTC");
                     String tenmh = jdbc.queryForObject("SELECT TENMH FROM MONHOC WHERE MAMH=?", String.class, mamh.trim());
-                    List<Map<String, Object>> data = jdbc.queryForList(
-                            "SELECT SV.MASV, SV.HO, SV.TEN, SV.PHAI, SV.MALOP " +
-                            "FROM DANGKY DK JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
-                            "WHERE DK.MALTC=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                            "ORDER BY SV.MASV", maltc);
+                    List<Map<String, Object>> data = jdbc.queryForList("EXEC sp_InDSSVLTC ?", maltc);
                     model.addAttribute("data", data);
                     model.addAttribute("tenmh", tenmh);
                 }
@@ -168,12 +144,7 @@ public class BaoCaoController {
                 } else {
                     Integer maltc = (Integer) ltcRows.get(0).get("MALTC");
                     String tenmh = jdbc.queryForObject("SELECT TENMH FROM MONHOC WHERE MAMH=?", String.class, mamh.trim());
-                    List<Map<String, Object>> data = jdbc.queryForList(
-                            "SELECT SV.MASV, SV.HO, SV.TEN, SV.MALOP, DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK, " +
-                            "dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK) AS DIEM_HM " +
-                            "FROM DANGKY DK JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
-                            "WHERE DK.MALTC=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                            "ORDER BY SV.MASV", maltc);
+                    List<Map<String, Object>> data = jdbc.queryForList("EXEC sp_InBangDiemLTC ?", maltc);
                     model.addAttribute("data", data);
                     model.addAttribute("tenmh", tenmh);
                 }
@@ -189,26 +160,9 @@ public class BaoCaoController {
                 } else {
                     List<Map<String, Object>> data;
                     if ("hk".equals(phamvi) && nienkhoa != null && !nienkhoa.isEmpty() && hocky != null) {
-                        data = jdbc.queryForList(
-                                "SELECT MH.TENMH, " +
-                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
-                                "FROM DANGKY DK " +
-                                "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                                "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                                "WHERE DK.MASV=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                                "AND DK.DIEM_CK IS NOT NULL " +
-                                "AND LTC.NIENKHOA=? AND LTC.HOCKY=? " +
-                                "GROUP BY MH.TENMH ORDER BY MH.TENMH", targetSV.trim(), nienkhoa.trim(), hocky);
+                        data = jdbc.queryForList("EXEC sp_InPhieuDiem ?, ?, ?", targetSV.trim(), nienkhoa.trim(), hocky);
                     } else {
-                        data = jdbc.queryForList(
-                                "SELECT MH.TENMH, " +
-                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
-                                "FROM DANGKY DK " +
-                                "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                                "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                                "WHERE DK.MASV=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                                "AND DK.DIEM_CK IS NOT NULL " +
-                                "GROUP BY MH.TENMH ORDER BY MH.TENMH", targetSV.trim());
+                        data = jdbc.queryForList("EXEC sp_InPhieuDiem ?", targetSV.trim());
                     }
                     
                     // Tính điểm chữ + thang 4 cho từng môn
@@ -257,51 +211,15 @@ public class BaoCaoController {
                 if (lopInfo.isEmpty()) {
                     model.addAttribute("error", "Không tìm thấy lớp học!");
                 } else {
-                    // lopMaKhoa used only for display; NOT used to filter queries
-                    // so that common subjects opened by other departments are also included
                     List<Map<String, Object>> dsmhCross;
                     List<Map<String, Object>> diemData;
 
                     if ("hk".equals(phamvi) && nienkhoa != null && !nienkhoa.trim().isEmpty() && hocky != null) {
-                        dsmhCross = jdbc.queryForList(
-                                "SELECT DISTINCT MH.MAMH, MH.TENMH FROM DANGKY DK " +
-                                "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                                "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                                "JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
-                                "WHERE SV.MALOP=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                                "AND DK.DIEM_CK IS NOT NULL " +
-                                "AND LTC.NIENKHOA=? AND LTC.HOCKY=? " +
-                                "ORDER BY MH.TENMH", malop.trim(), nienkhoa.trim(), hocky);
-
-                        diemData = jdbc.queryForList(
-                                "SELECT DK.MASV, LTC.MAMH, " +
-                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
-                                "FROM DANGKY DK " +
-                                "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                                "JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
-                                "WHERE SV.MALOP=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                                "AND DK.DIEM_CK IS NOT NULL " +
-                                "AND LTC.NIENKHOA=? AND LTC.HOCKY=? " +
-                                "GROUP BY DK.MASV, LTC.MAMH", malop.trim(), nienkhoa.trim(), hocky);
+                        dsmhCross = jdbc.queryForList("EXEC sp_GetMonHocCross ?, ?, ?", malop.trim(), nienkhoa.trim(), hocky);
+                        diemData = jdbc.queryForList("EXEC sp_GetDiemDataCross ?, ?, ?", malop.trim(), nienkhoa.trim(), hocky);
                     } else {
-                        dsmhCross = jdbc.queryForList(
-                                "SELECT DISTINCT MH.MAMH, MH.TENMH FROM DANGKY DK " +
-                                "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                                "JOIN MONHOC MH ON LTC.MAMH=MH.MAMH " +
-                                "JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
-                                "WHERE SV.MALOP=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                                "AND DK.DIEM_CK IS NOT NULL " +
-                                "ORDER BY MH.TENMH", malop.trim());
-
-                        diemData = jdbc.queryForList(
-                                "SELECT DK.MASV, LTC.MAMH, " +
-                                "MAX(dbo.fn_DiemHetMon(DK.DIEM_CC, DK.DIEM_GK, DK.DIEM_CK)) AS DIEM " +
-                                "FROM DANGKY DK " +
-                                "JOIN LOPTINCHI LTC ON DK.MALTC=LTC.MALTC " +
-                                "JOIN SINHVIEN SV ON DK.MASV=SV.MASV " +
-                                "WHERE SV.MALOP=? AND (DK.HUYDANGKY=0 OR DK.HUYDANGKY IS NULL) " +
-                                "AND DK.DIEM_CK IS NOT NULL " +
-                                "GROUP BY DK.MASV, LTC.MAMH", malop.trim());
+                        dsmhCross = jdbc.queryForList("EXEC sp_GetMonHocCross ?", malop.trim());
+                        diemData = jdbc.queryForList("EXEC sp_GetDiemDataCross ?", malop.trim());
                     }
 
                     List<Map<String, Object>> dssv = jdbc.queryForList(

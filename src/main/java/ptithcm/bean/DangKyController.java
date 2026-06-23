@@ -280,14 +280,14 @@ public class DangKyController {
                     int existCount = jdbc.queryForObject(
                         "SELECT COUNT(*) FROM DANGKY WHERE MALTC=? AND MASV=?", Integer.class, maltc, masv);
                     if (existCount > 0) {
-                        jdbc.update("UPDATE DANGKY SET HUYDANGKY=0 WHERE MALTC=? AND MASV=?", maltc, masv);
+                        jdbc.update("EXEC sp_DangKyLTC ?, ?", maltc, masv);
                     } else {
                         Integer sosvToida = (Integer) ltcInfo.get("SOSVTOIDA");
                         int currentDK = jdbc.queryForObject(
                             "SELECT COUNT(*) FROM DANGKY WHERE MALTC=? AND (HUYDANGKY=0 OR HUYDANGKY IS NULL)",
                             Integer.class, maltc);
                         if (sosvToida != null && currentDK >= sosvToida) { skippedFull++; continue; }
-                        jdbc.update("INSERT INTO DANGKY (MALTC, MASV, HUYDANGKY) VALUES (?,?,0)", maltc, masv);
+                        jdbc.update("EXEC sp_DangKyLTC ?, ?", maltc, masv);
                     }
                     registered++;
                 }
@@ -329,7 +329,7 @@ public class DangKyController {
             if (!rows.isEmpty() && rows.get(0).get("DIEM_CK") != null) {
                 ra.addFlashAttribute("error", "Không thể hủy — môn này đã có điểm cuối kỳ!");
             } else {
-                jdbc.update("UPDATE DANGKY SET HUYDANGKY=1 WHERE MALTC=? AND MASV=?", maltc, masv);
+                jdbc.update("EXEC sp_HuyDangKyLTC ?, ?", maltc, masv);
                 ra.addFlashAttribute("success", "Đã hủy đăng ký lớp tín chỉ #" + maltc);
             }
         } catch (Exception e) {

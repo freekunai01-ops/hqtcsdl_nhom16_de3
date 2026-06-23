@@ -23,7 +23,6 @@ GO
 -- ==========================================
 IF OBJECT_ID('DANGKY', 'U') IS NOT NULL DROP TABLE DANGKY;
 IF OBJECT_ID('LOPTINCHI', 'U') IS NOT NULL DROP TABLE LOPTINCHI;
-IF OBJECT_ID('TaiKhoan', 'U') IS NOT NULL DROP TABLE TaiKhoan;
 IF OBJECT_ID('SINHVIEN', 'U') IS NOT NULL DROP TABLE SINHVIEN;
 IF OBJECT_ID('LOP', 'U') IS NOT NULL DROP TABLE LOP;
 IF OBJECT_ID('GIANGVIEN', 'U') IS NOT NULL DROP TABLE GIANGVIEN;
@@ -147,22 +146,4 @@ CREATE TABLE DANGKY (
     CONSTRAINT CHK_DANGKY_DIEM_CK CHECK (DIEM_CK IS NULL OR (DIEM_CK >= 0 AND DIEM_CK <= 10))
 );
 GO
-
--- ==========================================
--- 8. Bảng TaiKhoan
--- ==========================================
-CREATE TABLE TaiKhoan (
-    Login nvarchar(50) NOT NULL,
-    MatKhau nvarchar(50) NOT NULL,
-    NhomQuyen nvarchar(20) NOT NULL,
-    MAGV nchar(10) NULL,
-    MAKHOA nchar(10) NULL,
-    TrangThai nvarchar(20) NOT NULL DEFAULT 'Active',
-    NgayTao datetime NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT PK_TaiKhoan PRIMARY KEY (Login),
-    CONSTRAINT FK_TaiKhoan_GIANGVIEN FOREIGN KEY (MAGV) REFERENCES GIANGVIEN(MAGV),
-    CONSTRAINT FK_TaiKhoan_KHOA FOREIGN KEY (MAKHOA) REFERENCES KHOA(MAKHOA)
-);
-GO
-
 PRINT N'Khởi tạo cấu trúc bảng thành công!';

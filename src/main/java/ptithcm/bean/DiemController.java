@@ -152,8 +152,8 @@ public class DiemController {
             tx.execute(status -> {
                 for (int i = 0; i < masvArr.length; i++) {
                     Double cc = parseDoubleOrNull(diemCCArr[i]), gk = parseDoubleOrNull(diemGKArr[i]), ck = parseDoubleOrNull(diemCKArr[i]);
-                    jdbc.update("UPDATE DANGKY SET DIEM_CC=?, DIEM_GK=?, DIEM_CK=? WHERE MALTC=? AND MASV=?",
-                        cc, gk, ck, maltc, masvArr[i].trim());
+                    jdbc.update("EXEC sp_GhiDiem ?, ?, ?, ?, ?",
+                        maltc, masvArr[i].trim(), cc != null ? cc.intValue() : null, gk, ck);
                 }
                 return null;
             });
