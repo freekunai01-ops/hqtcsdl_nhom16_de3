@@ -52,19 +52,17 @@
         .report-table tbody tr:nth-child(even) { background: #f9fbff; }
 
         /* Cross-tab specific */
-        .cross-tab th.rotate-header {
-            height: 95px; width: 44px; padding: 4px; text-align: center;
-            white-space: nowrap; vertical-align: bottom;
-        }
-        .cross-tab th.rotate-header div {
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            display: inline-block;
+        .cross-tab th.subject-header {
             font-size: 11px;
             font-weight: bold;
-            max-height: 85px;
-            overflow: hidden;
-            letter-spacing: 0.5px;
+            text-align: center;
+            vertical-align: middle;
+            min-width: 100px;
+            max-width: 130px;
+            white-space: normal;
+            word-wrap: break-word;
+            background: #e3eaf7;
+            padding: 6px 4px;
         }
         .cross-tab td { text-align: center; font-size: 12px; padding: 4px 3px; }
         .cross-tab td.sv-info-cell { text-align: left; min-width: 180px; padding: 4px 7px; }
@@ -106,8 +104,7 @@
         /* Landscape for cross-tab (more columns) */
         @media print and (orientation: landscape) {
             .report-container { padding: 6px; }
-            .cross-tab th.rotate-header { height: 80px; width: 38px; }
-            .cross-tab th.rotate-header div { font-size: 9px; max-height: 75px; }
+            .cross-tab th.subject-header { font-size: 9px; min-width: 80px; max-width: 100px; }
             .cross-tab td { font-size: 10px; padding: 3px 2px; }
             .report-table { font-size: 10px; }
         }
@@ -353,8 +350,8 @@
                 <tr>
                     <th class="align-middle" style="min-width:190px; text-align:center;">MASV &mdash; Họ tên</th>
                     <c:forEach items="${dsmhCross}" var="mh">
-                        <th class="rotate-header">
-                            <div title="${mh.TENMH}">${mh.MAMH}</div>
+                        <th class="subject-header">
+                            ${mh.TENMH}
                         </th>
                     </c:forEach>
                     <th class="align-middle" style="width:55px; text-align:center; background:#eef2ff;">GPA</th>
