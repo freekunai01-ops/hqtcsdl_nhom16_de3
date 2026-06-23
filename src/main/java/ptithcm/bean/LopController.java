@@ -30,11 +30,11 @@ public class LopController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String saveLop(@RequestParam String action,
-                          @RequestParam String maLop,
-                          @RequestParam String tenLop,
-                          @RequestParam String khoaHoc,
-                          @RequestParam String maKhoa,
+    public String saveLop(@RequestParam("action") String action,
+                          @RequestParam("maLop") String maLop,
+                          @RequestParam("tenLop") String tenLop,
+                          @RequestParam("khoaHoc") String khoaHoc,
+                          @RequestParam("maKhoa") String maKhoa,
                           HttpSession session,
                           RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
@@ -131,8 +131,8 @@ public class LopController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String deleteLop(@RequestParam String maLop,
-                            @RequestParam(required = false) String nextMaLop,
+    public String deleteLop(@RequestParam("maLop") String maLop,
+                            @RequestParam(value = "nextMaLop", required = false) String nextMaLop,
                             HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";

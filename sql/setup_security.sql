@@ -58,9 +58,12 @@ GO
 -- 4. GÁN USERS VÀO ROLES
 -- =============================================
 ALTER ROLE PGV ADD MEMBER pgv_admin;
+ALTER ROLE db_owner ADD MEMBER pgv_admin;
 GO
+USE master;
+ALTER SERVER ROLE securityadmin ADD MEMBER pgv_admin;
+USE QLDSV_HTC;
 ALTER ROLE KHOA ADD MEMBER khoa_all;
-GO
 ALTER ROLE NHOM_SV ADD MEMBER sv;
 GO
 

@@ -5,7 +5,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>QLSV_HTC - Quản trị tài khoản</title>
+    <title>QLSV_HTC - Tạo tài khoản</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/css/style.css?v=4" rel="stylesheet">
     <style>
@@ -271,7 +271,7 @@
             <!-- Form Titlebar -->
             <div class="form-window-titlebar">
                 <div class="title-left">
-                    <i class="fas fa-user-shield"></i> Form: Quản trị tài khoản
+                    <i class="fas fa-user-shield"></i> Form: Tạo tài khoản
                 </div>
                 <div class="title-right">
                     <span class="window-btn green"></span>
@@ -637,7 +637,7 @@
             listHtml += '<li class="privilege-item allow"><i class="fas fa-check-circle"></i> Xem/In phiếu điểm cá nhân</li>';
             listHtml += '<li class="privilege-item deny"><i class="fas fa-times-circle"></i> Xem sinh viên khác</li>';
             listHtml += '<li class="privilege-item deny"><i class="fas fa-times-circle"></i> Nhập điểm</li>';
-            listHtml += '<li class="privilege-item deny"><i class="fas fa-times-circle"></i> Quản trị tài khoản</li>';
+            listHtml += '<li class="privilege-item deny"><i class="fas fa-times-circle"></i> Tạo tài khoản</li>';
             
             var selectSv = document.getElementById('selectSv');
             if (selectSv.value) {

@@ -200,7 +200,7 @@ public class DangKyController {
 
     /** PGV chọn lớp HC */
     @RequestMapping(value = "/selectLop", method = RequestMethod.POST)
-    public String selectLop(@RequestParam String malop, HttpSession session) {
+    public String selectLop(@RequestParam("malop") String malop, HttpSession session) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen")) && !"KHOA".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";
         }
@@ -211,7 +211,7 @@ public class DangKyController {
 
     /** PGV chọn SV từ danh sách */
     @RequestMapping(value = "/selectStudent", method = RequestMethod.POST)
-    public String selectStudent(@RequestParam String masv, HttpSession session, RedirectAttributes ra) {
+    public String selectStudent(@RequestParam("masv") String masv, HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen")) && !"KHOA".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";
         }
@@ -232,15 +232,15 @@ public class DangKyController {
     }
 
     @RequestMapping(value = "/search", method = RequestMethod.POST)
-    public String search(@RequestParam String nienkhoa, @RequestParam int hocky, RedirectAttributes ra) {
+    public String search(@RequestParam("nienkhoa") String nienkhoa, @RequestParam("hocky") int hocky, RedirectAttributes ra) {
         ra.addFlashAttribute("flashNienkhoa", nienkhoa.trim());
         ra.addFlashAttribute("flashHocky", hocky);
         return "redirect:/dangky";
     }
 
     @RequestMapping(value = "/saveMultiple", method = RequestMethod.POST)
-    public String saveMultiple(@RequestParam(required = false) List<Integer> selectedLtcs,
-            @RequestParam String nienkhoa, @RequestParam int hocky,
+    public String saveMultiple(@RequestParam(value = "selectedLtcs", required = false) List<Integer> selectedLtcs,
+            @RequestParam("nienkhoa") String nienkhoa, @RequestParam("hocky") int hocky,
             HttpSession session, RedirectAttributes ra) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"SV".equals(nhomQuyen) && !"PGV".equals(nhomQuyen))
@@ -301,7 +301,7 @@ public class DangKyController {
     }
 
     @RequestMapping(value = "/cancel", method = RequestMethod.POST)
-    public String cancelOne(@RequestParam int maltc, HttpSession session, RedirectAttributes ra) {
+    public String cancelOne(@RequestParam("maltc") int maltc, HttpSession session, RedirectAttributes ra) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"SV".equals(nhomQuyen) && !"PGV".equals(nhomQuyen))
             return "redirect:/home";

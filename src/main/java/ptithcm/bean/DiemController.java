@@ -43,8 +43,8 @@ public class DiemController {
     }
 
     @RequestMapping(value = "/load", method = RequestMethod.POST)
-    public String loadDiem(@RequestParam String nienkhoa, @RequestParam int hocky,
-                           @RequestParam String mamh, @RequestParam int nhom,
+    public String loadDiem(@RequestParam("nienkhoa") String nienkhoa, @RequestParam("hocky") int hocky,
+                           @RequestParam("mamh") String mamh, @RequestParam("nhom") int nhom,
                            HttpSession session, ModelMap model) {
         String nhomQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(nhomQuyen) && !"KHOA".equals(nhomQuyen)) return "redirect:/home";
@@ -126,8 +126,8 @@ public class DiemController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String saveDiem(@RequestParam int maltc, @RequestParam String nienkhoa,
-                           @RequestParam int hocky, @RequestParam String mamh, @RequestParam int nhom,
+    public String saveDiem(@RequestParam("maltc") int maltc, @RequestParam("nienkhoa") String nienkhoa,
+                           @RequestParam("hocky") int hocky, @RequestParam("mamh") String mamh, @RequestParam("nhom") int nhom,
                            @RequestParam("masv[]") String[] masvArr,
                            @RequestParam("diemCC[]") String[] diemCCArr,
                            @RequestParam("diemGK[]") String[] diemGKArr,

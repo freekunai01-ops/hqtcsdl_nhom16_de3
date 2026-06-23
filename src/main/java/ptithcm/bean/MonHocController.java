@@ -59,9 +59,9 @@ public class MonHocController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String save(@RequestParam String action, @RequestParam String mamh,
-                       @RequestParam String tenmh, @RequestParam int sotietLT,
-                       @RequestParam int sotietTH, HttpSession session, RedirectAttributes ra) {
+    public String save(@RequestParam("action") String action, @RequestParam("mamh") String mamh,
+                       @RequestParam("tenmh") String tenmh, @RequestParam("sotietLT") int sotietLT,
+                       @RequestParam("sotietTH") int sotietTH, HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         if (mamh == null || mamh.trim().isEmpty()) {
             ra.addFlashAttribute("error", "Mã MH không được bỏ trống!");
@@ -154,8 +154,8 @@ public class MonHocController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam String mamh,
-                         @RequestParam(required = false) String nextMamh,
+    public String delete(@RequestParam("mamh") String mamh,
+                         @RequestParam(value = "nextMamh", required = false) String nextMamh,
                          HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);

@@ -1,4 +1,4 @@
-﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -98,11 +98,11 @@
                     </div>
                 </a>
 
-                <!-- 9. Quản trị tài khoản -->
+                <!-- 9. Tạo tài khoản -->
                 <c:if test="${sessionScope.nhomQuyen == 'PGV'}">
                     <a href="${pageContext.request.contextPath}/taikhoan" class="home-card color-darkblue">
                         <div class="home-card-header">
-                            <i class="fas fa-users-cog"></i> Quản trị tài khoản
+                            <i class="fas fa-users-cog"></i> Tạo tài khoản
                         </div>
                         <div class="home-card-body">
                             PGV/KHOA/SV - phân quyền

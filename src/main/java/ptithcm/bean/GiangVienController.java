@@ -56,10 +56,10 @@ public class GiangVienController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String save(@RequestParam String action, @RequestParam String magv,
-                       @RequestParam String ho, @RequestParam String ten,
-                       @RequestParam String hocvi, @RequestParam String hocham,
-                       @RequestParam String chuyenmon, @RequestParam String maKhoa,
+    public String save(@RequestParam("action") String action, @RequestParam("magv") String magv,
+                       @RequestParam("ho") String ho, @RequestParam("ten") String ten,
+                       @RequestParam("hocvi") String hocvi, @RequestParam("hocham") String hocham,
+                       @RequestParam("chuyenmon") String chuyenmon, @RequestParam("maKhoa") String maKhoa,
                        HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         if (magv == null || magv.trim().isEmpty()) { ra.addFlashAttribute("error", "Mã GV không được bỏ trống!"); return "redirect:/giangvien"; }
@@ -97,8 +97,8 @@ public class GiangVienController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam String magv,
-                         @RequestParam(required = false) String nextMagv,
+    public String delete(@RequestParam("magv") String magv,
+                         @RequestParam(value = "nextMagv", required = false) String nextMagv,
                          HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) return "redirect:/home";
         JdbcTemplate jdbc = connHelper.getJdbcTemplate(session);

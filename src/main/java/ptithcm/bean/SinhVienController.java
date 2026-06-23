@@ -117,15 +117,15 @@ public class SinhVienController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String save(@RequestParam String action,
-                       @RequestParam String masv,
-                       @RequestParam String ho,
-                       @RequestParam String ten,
-                       @RequestParam String malop,
-                       @RequestParam(required = false, defaultValue = "false") boolean phai,
-                       @RequestParam(required = false) String ngaysinh,
-                       @RequestParam(required = false) String diachi,
-                       @RequestParam(required = false, defaultValue = "false") boolean danghihoc,
+    public String save(@RequestParam("action") String action,
+                       @RequestParam("masv") String masv,
+                       @RequestParam("ho") String ho,
+                       @RequestParam("ten") String ten,
+                       @RequestParam("malop") String malop,
+                       @RequestParam(value = "phai", required = false, defaultValue = "false") boolean phai,
+                       @RequestParam(value = "ngaysinh", required = false) String ngaysinh,
+                       @RequestParam(value = "diachi", required = false) String diachi,
+                       @RequestParam(value = "danghihoc", required = false, defaultValue = "false") boolean danghihoc,
                        HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";
@@ -184,9 +184,9 @@ public class SinhVienController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam String masv,
-                         @RequestParam String malop,
-                         @RequestParam(required = false) String nextMasv,
+    public String delete(@RequestParam("masv") String masv,
+                         @RequestParam("malop") String malop,
+                         @RequestParam(value = "nextMasv", required = false) String nextMasv,
                          HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";

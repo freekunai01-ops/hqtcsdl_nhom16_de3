@@ -44,9 +44,9 @@ public class KhoaController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String save(@RequestParam String action,
-                       @RequestParam String makhoa,
-                       @RequestParam String tenkhoa,
+    public String save(@RequestParam("action") String action,
+                       @RequestParam("makhoa") String makhoa,
+                       @RequestParam("tenkhoa") String tenkhoa,
                        HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";
@@ -82,8 +82,8 @@ public class KhoaController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam String makhoa,
-                         @RequestParam(required = false) String nextMakhoa,
+    public String delete(@RequestParam("makhoa") String makhoa,
+                         @RequestParam(value = "nextMakhoa", required = false) String nextMakhoa,
                          HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";

@@ -25,10 +25,10 @@ public class LoginController {
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
-    public String doLogin(@RequestParam String loginType,
-                          @RequestParam String username,
-                          @RequestParam(required = false) String password,
-                          @RequestParam(required = false) String selectedRole,
+    public String doLogin(@RequestParam("loginType") String loginType,
+                          @RequestParam("username") String username,
+                          @RequestParam(value = "password", required = false) String password,
+                          @RequestParam(value = "selectedRole", required = false) String selectedRole,
                           HttpSession session,
                           ModelMap model) {
         try {

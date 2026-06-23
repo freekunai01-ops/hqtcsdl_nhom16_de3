@@ -92,7 +92,7 @@
                 <span class="menu-label">Quản trị</span>
                 <div class="menu-dropdown">
                     <a href="${pageContext.request.contextPath}/taikhoan">
-                        <i class="fas fa-users-cog"></i> Quản trị tài khoản
+                        <i class="fas fa-users-cog"></i> Tạo tài khoản
                     </a>
                 </div>
             </div>

@@ -52,13 +52,13 @@ public class TaiKhoanController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String save(@RequestParam(required = false) String magv,
-                       @RequestParam(required = false) String masv,
-                       @RequestParam String login,
-                       @RequestParam String matkhau,
-                       @RequestParam String nhomQuyen,
-                       @RequestParam(required = false) String maKhoa,
-                       @RequestParam(required = false, defaultValue = "Active") String trangthai,
+    public String save(@RequestParam(value = "magv", required = false) String magv,
+                       @RequestParam(value = "masv", required = false) String masv,
+                       @RequestParam("login") String login,
+                       @RequestParam("matkhau") String matkhau,
+                       @RequestParam("nhomQuyen") String nhomQuyen,
+                       @RequestParam(value = "maKhoa", required = false) String maKhoa,
+                       @RequestParam(value = "trangthai", required = false, defaultValue = "Active") String trangthai,
                        HttpSession session, RedirectAttributes ra) {
         String sessionQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(sessionQuyen) && !"KHOA".equals(sessionQuyen)) {
@@ -143,8 +143,8 @@ public class TaiKhoanController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam(required = false) String magv,
-                          @RequestParam(required = false) String login,
+    public String delete(@RequestParam(value = "magv", required = false) String magv,
+                          @RequestParam(value = "login", required = false) String login,
                           HttpSession session, RedirectAttributes ra) {
         String sessionQuyen = (String) session.getAttribute("nhomQuyen");
         if (!"PGV".equals(sessionQuyen) && !"KHOA".equals(sessionQuyen)) {

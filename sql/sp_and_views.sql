@@ -75,11 +75,11 @@ BEGIN
 
     -- C. Find Role Name (ROLENAME)
     -- Retrieve the database role the user belongs to
-    SELECT @role = r.name 
+    SELECT TOP 1 @role = r.name 
     FROM sys.database_role_members rm
     JOIN sys.database_principals r ON rm.role_principal_id = r.principal_id
     JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
-    WHERE m.name = @username
+    WHERE m.name = @username AND r.name IN ('PGV', 'KHOA', 'NHOM_SV')
 
     -- Fallback default roles if not explicitly set in database roles
     IF @role IS NULL

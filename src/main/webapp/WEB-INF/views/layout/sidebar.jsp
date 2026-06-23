@@ -62,7 +62,7 @@
             <c:if test="${sessionScope.nhomQuyen == 'PGV'}">
                 <li class="nav-item">
                     <a class="nav-link" href="${pageContext.request.contextPath}/taikhoan">
-                        <i class="fas fa-users-cog"></i> Quản trị tài khoản
+                        <i class="fas fa-users-cog"></i> Tạo tài khoản
                     </a>
                 </li>
             </c:if>

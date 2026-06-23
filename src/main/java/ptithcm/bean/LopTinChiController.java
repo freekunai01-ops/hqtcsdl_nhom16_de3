@@ -68,16 +68,16 @@ public class LopTinChiController {
     }
 
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public String save(@RequestParam String action,
-            @RequestParam(required = false) Integer maltc,
-            @RequestParam String nienkhoa,
-            @RequestParam int hocky,
-            @RequestParam String mamh,
-            @RequestParam int nhom,
-            @RequestParam String magv,
-            @RequestParam int sosvtoithieu,
-            @RequestParam(required = false, defaultValue = "false") boolean huylop,
-            @RequestParam(required = false) String maKhoa,
+    public String save(@RequestParam("action") String action,
+            @RequestParam(value = "maltc", required = false) Integer maltc,
+            @RequestParam("nienkhoa") String nienkhoa,
+            @RequestParam("hocky") int hocky,
+            @RequestParam("mamh") String mamh,
+            @RequestParam("nhom") int nhom,
+            @RequestParam("magv") String magv,
+            @RequestParam("sosvtoithieu") int sosvtoithieu,
+            @RequestParam(value = "huylop", required = false, defaultValue = "false") boolean huylop,
+            @RequestParam(value = "maKhoa", required = false) String maKhoa,
             HttpSession session, RedirectAttributes ra) {
         System.out.println("===> DEBUG: LopTinChiController.save action=" + action + ", nienkhoa=" + nienkhoa
                 + ", hocky=" + hocky + ", mamh=" + mamh + ", nhom=" + nhom + ", magv=" + magv + ", nhomQuyen="
@@ -136,8 +136,8 @@ public class LopTinChiController {
     }
 
     @RequestMapping(value = "/delete", method = RequestMethod.POST)
-    public String delete(@RequestParam int maltc,
-            @RequestParam(required = false) Integer nextMaltc,
+    public String delete(@RequestParam("maltc") int maltc,
+            @RequestParam(value = "nextMaltc", required = false) Integer nextMaltc,
             HttpSession session, RedirectAttributes ra) {
         if (!"PGV".equals(session.getAttribute("nhomQuyen"))) {
             return "redirect:/home";
